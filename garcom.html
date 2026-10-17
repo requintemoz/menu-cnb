@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13283a">
+<title>CNB · Garçom</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="estilos.css">
+<script src="config.js"></script>
+<script src="comum.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+</head>
+<body>
+<header class="top wrap"><div class="brand">Requinte · CNB<small>App do garçom</small></div><div class="clock" style="margin-left:auto"><span id="clock" class="num">—</span></div></header>
+<section class="view wrap">
+  <div id="login"></div>
+  <div id="app" hidden>
+    <div class="g-head"><div><span class="eyebrow">POS · turno</span><br><span class="who" id="g-name">—</span> <span class="muted" id="g-mesas"></span></div><div class="row"><button class="btn sm" id="g-refresh" type="button">Actualizar</button><button class="btn sm ghost" id="g-exit" type="button">Sair</button></div></div>
+    <div class="row" style="margin-bottom:8px"><span class="eyebrow">Pendentes</span><span class="muted" id="g-count"></span><span class="muted" id="g-nfc-state" style="margin-left:auto;font-size:12px"></span></div>
+    <div class="list" id="g-list"></div>
+  </div>
+</section>
+<div class="nfc" id="g-nfc" hidden><button type="button" id="g-nfc-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M6 8.5a8 8 0 0 1 12 0"/><path d="M8.5 11.5a4.5 4.5 0 0 1 7 0"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/></svg><span id="g-nfc-lbl">Ler mesa (NFC)</span></button></div>
+<div id="sheet-root"></div><div id="toast-root"></div>
+<script>
+(function () {
+  const { api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
+  let S = null, user = null, token = null, lastIds = new Set(), timer = null; const off = offlineBar(); armarSom();
+  setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
+  function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('g-nfc').hidden = false; document.getElementById('g-name').textContent = user.nome; load(); timer = setInterval(load, CNB.POLL_STAFF_MS); nfcStart(); }
+  const saved = sess.get(); if (saved) start(saved); else loginUI(['garcom', 'caixa', 'supervisor', 'gerente'], start);
+  document.getElementById('g-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
+  document.getElementById('g-refresh').addEventListener('click', load);
+  async function load() {
+    try { S = await api('gListar', token); off.off(); } catch (e) { if (/Sessão/.test(e.message)) { sess.clear(); location.reload(); return; } off.on(); return; }
+    document.getElementById('g-mesas').textContent = S.minhasMesas.length ? '· mesas ' + S.minhasMesas.join(', ') : '· sem mesas atribuídas';
+    const rows = [...S.chamadas.map(c => ({ k: 'ch', t: c.c0, o: c })), ...S.pedidos.map(p => ({ k: 'ped', t: p.t0, o: p }))].sort((a, b) => new Date(a.t) - new Date(b.t));
+    const ids = new Set(rows.map(r => r.o.id)); const novos = [...ids].filter(i => !lastIds.has(i)); if (lastIds.size && novos.length) { beep(2); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } lastIds = ids;
+    document.getElementById('g-count').textContent = rows.length ? `${S.pedidos.length} pedido(s), ${S.chamadas.length} chamada(s)` : 'nada pendente';
+    const nome = id => S.nomes[id] || id || '—';
+    document.getElementById('g-list').innerHTML = rows.length ? rows.map(r => {
+      const m = mins(r.t); const mine = r.o.garcomMesa === user.id; const dono = r.o.garcomMesa ? (mine ? 'mesa sua' : 'mesa de ' + nome(r.o.garcomMesa)) : 'mesa sem garçom';
+      if (r.k === 'ch') return `<button class="wi ${nivel(m, S.limites.chamada)}" type="button" data-ch="${r.o.id}"><span class="mesa">${esc(r.o.mesa)}</span><span><b>${r.o.motivo === 'Conta' ? 'Pedir a conta' : 'Chamada · ' + esc(r.o.motivo)}</b><br><span class="sub">${dono}${r.o.aceite ? ' · aceite por ' + nome(r.o.g) : ''}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
+      const lim = r.o.t2 ? S.limites.entregar : r.o.t1 ? S.limites.registar : S.limites.aceitar;
+      return `<button class="wi ${nivel(m, lim)}" type="button" data-ped="${r.o.id}"><span class="mesa">${esc(r.o.mesa)}</span><span><b>${r.o.t2 ? 'Entregar' : r.o.t1 ? 'Registar no POS' : 'Pedido novo'} · ${r.o.linhas.reduce((a, l) => a + Number(l.qtd), 0)} artigos</b><br><span class="sub">${r.o.linhas.slice(0, 3).map(l => l.qtd + '× ' + esc(l.nome)).join(', ')}${r.o.linhas.length > 3 ? '…' : ''}</span><br><span class="sub">${dono}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
+    }).join('') : '<div class="empty">Sem pedidos nem chamadas. O POS avisa quando chegar algo.</div>';
+    document.querySelectorAll('[data-ped]').forEach(b => b.addEventListener('click', () => pedido(b.dataset.ped)));
+    document.querySelectorAll('[data-ch]').forEach(b => b.addEventListener('click', () => chamada(b.dataset.ch)));
+  }
+  function agrupar(linhas) { // mesma ordem das categorias e artigos do Loyverse, para o garçom lançar de cima para baixo
+    const ordem = S.ordemCategorias || []; const pos = c => { const i = ordem.indexOf(c); return i < 0 ? 999 : i; };
+    const out = {}; linhas.slice().sort((a, b) => pos(a.cat) - pos(b.cat) || String(a.nome).localeCompare(b.nome)).forEach(l => (out[l.cat || 'Outros'] = out[l.cat || 'Outros'] || []).push(l)); return out; }
+  async function pedido(id) {
+    const p = S.pedidos.find(x => x.id === id); if (!p) return;
+    if (!p.t1) { try { await api('gAbrirPedido', token, id); p.t1 = new Date().toISOString(); } catch (e) { toast(e.message); } }
+    const grp = agrupar(p.linhas);
+    openSheet(`<div class="detail"><span class="eyebrow">Mesa ${esc(p.mesa)} · ${p.id} · ${hhmm(p.t0)}</span><h3>${p.t2 ? 'Entregar à mesa' : 'Lançar no Loyverse'}</h3>
+      <div class="timeline"><div class="on"><b>t0 ${hhmm(p.t0)}</b>Pedido</div><div class="${p.t1 ? 'on' : ''}"><b>t1 ${hhmm(p.t1)}</b>Recebido</div><div class="${p.t2 ? 'on' : ''}"><b>t2 ${hhmm(p.t2)}</b>Registado</div><div><b>t3 —</b>Entregue</div></div>
+      <div class="lv-list">${Object.entries(grp).map(([c, ls]) => `<div class="lv-cat">${esc(c)}</div>${ls.map(l => `<div class="lv-line"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${l.variante ? `<div class="mod">${esc(l.variante)}</div>` : ''}${l.mods ? `<div class="mod">+ ${esc(l.mods)}</div>` : ''}${l.nota ? `<div class="note">“${esc(l.nota)}” <button class="btn sm ghost" type="button" data-copy="${esc(l.nota)}">copiar</button></div>` : ''}${l.indisponivel ? '<span class="pill crit">indisponível</span>' : `<button class="btn sm ghost" type="button" data-ind="${l._row}" style="font-size:12px">esgotado</button>`}</div></div>`).join('')}`).join('')}</div>
+      <div class="actions">${p.t2 ? `<button class="btn sea" id="d-nfc" type="button">Ler NFC da mesa · entregue</button>` : `<button class="btn primary" id="d-reg" type="button">Registado no POS</button>`}<button class="btn" id="d-pass" type="button">Passar a colega</button><button class="btn ghost" id="d-anul" type="button">Anular…</button></div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">Lance os artigos no Loyverse pela ordem acima e só depois carregue em «Registado no POS».</p></div>`, r => {
+      r.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => navigator.clipboard.writeText(b.dataset.copy).then(() => toast('Nota copiada')).catch(() => toast(b.dataset.copy))));
+      r.querySelectorAll('[data-ind]').forEach(b => b.addEventListener('click', async () => { try { await api('gIndisponivel', token, id, +b.dataset.ind); toast('Marcado como esgotado; o cliente é avisado'); closeSheet(); load(); } catch (e) { toast(e.message); } }));
+      const reg = r.querySelector('#d-reg'); if (reg) reg.addEventListener('click', async () => { reg.disabled = true; try { await api('gRegistado', token, id); closeSheet(); toast('Registado. O cliente vê «Em preparação».'); load(); } catch (e) { toast(e.message); reg.disabled = false; } });
+      const nf = r.querySelector('#d-nfc'); if (nf) nf.addEventListener('click', () => { closeSheet(); lerMesa(); });
+      r.querySelector('#d-pass').addEventListener('click', () => passar('pedido', id));
+      r.querySelector('#d-anul').addEventListener('click', () => anular(id));
+    });
+  }
+  async function chamada(id) {
+    const c = S.chamadas.find(x => x.id === id); if (!c) return;
+    if (!c.aceite) { try { await api('gAceitarChamada', token, id); } catch (e) { toast(e.message); } }
+    openSheet(`<div class="detail"><span class="eyebrow">Mesa ${esc(c.mesa)} · ${hhmm(c.c0)}</span><h3>${c.motivo === 'Conta' ? 'Levar a conta' : esc(c.motivo)}</h3><p class="muted">Ao chegar à mesa, encoste o POS à etiqueta para fechar a chamada.</p><div class="actions"><button class="btn sea" id="d-nfc" type="button">Ler NFC da mesa · atendida</button><button class="btn" id="d-pass" type="button">Passar a colega</button><button class="btn ghost" id="d-mao" type="button">Fechar sem leitura</button></div></div>`, r => {
+      r.querySelector('#d-nfc').addEventListener('click', () => { closeSheet(); lerMesa(); });
+      r.querySelector('#d-pass').addEventListener('click', () => passar('chamada', id));
+      r.querySelector('#d-mao').addEventListener('click', async () => { try { await api('gFecharMesa', token, c.mesa, false, [id]); closeSheet(); toast('Fechada (sem confirmação na mesa)'); load(); } catch (e) { toast(e.message); } });
+    });
+  }
+  async function passar(tipo, id) {
+    const col = await api('gColegas', token);
+    openSheet(`<h3>Passar a um colega</h3><div class="opts">${col.length ? col.map(p => `<button type="button" class="opt" data-w="${p.id}"><span>${esc(p.nome)}</span></button>`).join('') : '<div class="empty">Nenhum outro garçom em turno</div>'}</div>`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', async () => { try { await api('gPassar', token, tipo, id, b.dataset.w); closeSheet(); toast('Passado'); load(); } catch (e) { toast(e.message); } })));
+  }
+  function anular(id) {
+    openSheet(`<h3>Anular pedido</h3><div class="opts"><button type="button" class="opt" data-r="brincadeira"><span>Pedido de brincadeira / não é da mesa</span></button><button type="button" class="opt" data-r="mesa_errada"><span>Mesa errada (mudar de mesa)</span></button><button type="button" class="opt" data-r="alterado"><span>Alterado na mesa</span></button></div>`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.r === 'mesa_errada') { openSheet(`<h3>Mover para que mesa?</h3><div class="opts">${S.mesas.map(m => `<button type="button" class="opt" data-m="${m.id}"><span>${m.id} · ${esc(m.zona)}</span></button>`).join('')}</div>`, rr => rr.querySelectorAll('.opt').forEach(x => x.addEventListener('click', async () => { try { await api('gAnular', token, id, 'mesa_errada', x.dataset.m); closeSheet(); toast('Movido para ' + x.dataset.m); load(); } catch (e) { toast(e.message); } }))); return; }
+      api('gAnular', token, id, b.dataset.r).then(() => { closeSheet(); toast('Anulado'); load(); }).catch(e => toast(e.message));
+    })));
+  }
+  /* ---- fecho na mesa: NFC (Web NFC, Chrome Android) ou QR pela câmara; à mão como último recurso ---- */
+  async function fecharPorCodigo(codigo, comNfc) { try { const r = await api('gFecharMesa', token, codigo, comNfc); toast(r.fechados ? `Mesa ${r.mesa}: ${r.fechados} fechado(s)` : `Mesa ${r.mesa}: nada por fechar`); beep(1); load(); } catch (e) { toast(e.message); } }
+  function codigoDe(txt) { txt = String(txt || '').trim(); try { const u = new URL(txt); return u.searchParams.get('m') || txt; } catch (e) { return txt; } }
+  let nfcOn = false;
+  async function nfcStart() {
+    const st = document.getElementById('g-nfc-state');
+    if (!('NDEFReader' in window)) { st.textContent = 'NFC não disponível neste browser'; document.getElementById('g-nfc-lbl').textContent = 'Ler mesa (QR)'; return; }
+    st.textContent = 'NFC: toque em «Ler mesa» para activar';
+  }
+  async function nfcArm() {
+    const st = document.getElementById('g-nfc-state');
+    try { const r = new NDEFReader(); await r.scan(); nfcOn = true; st.textContent = 'NFC activo: encoste à etiqueta da mesa';
+      r.onreading = e => { for (const rec of e.message.records) { let txt = ''; if (rec.recordType === 'text') txt = new TextDecoder(rec.encoding || 'utf-8').decode(rec.data); else if (rec.recordType === 'url') txt = new TextDecoder().decode(rec.data); if (txt) { fecharPorCodigo(codigoDe(txt), true); return; } } if (e.serialNumber) toast('Etiqueta sem código. Grave-a em Gestão → Mesas.'); };
+      r.onreadingerror = () => toast('Não consegui ler a etiqueta. Tente de novo.');
+    } catch (e) { st.textContent = 'NFC recusado: ' + e.message; nfcOn = false; }
+  }
+  function lerMesa() {
+    if ('NDEFReader' in window) { if (!nfcOn) nfcArm(); else toast('NFC activo: encoste o POS à etiqueta'); return; }
+    lerQR();
+  }
+  document.getElementById('g-nfc-btn').addEventListener('click', () => { if ('NDEFReader' in window) { if (!nfcOn) nfcArm(); else openSheet(`<h3>Fechar mesa</h3><p class="muted">Encoste o POS à etiqueta. Se a etiqueta não responder, leia o QR da mesa ou escolha à mão.</p><div class="actions"><button class="btn sea" id="q" type="button">Ler o QR da mesa</button><button class="btn" id="m" type="button">Escolher à mão</button></div>`, r => { r.querySelector('#q').addEventListener('click', () => { closeSheet(); lerQR(); }); r.querySelector('#m').addEventListener('click', () => { closeSheet(); aMao(); }); }); } else lerQR(); });
+  function aMao() { openSheet(`<h3>Fechar à mão (sem confirmação na mesa)</h3><div class="opts">${S.mesas.map(m => `<button type="button" class="opt" data-m="${m.id}"><span>${m.id} · ${esc(m.zona)}</span></button>`).join('')}</div>`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { closeSheet(); fecharPorCodigo(b.dataset.m, false); }))); }
+  async function lerQR() {
+    if (!navigator.mediaDevices || !window.jsQR) { aMao(); return; }
+    const bg = document.createElement('div'); bg.className = 'scan-bg'; bg.innerHTML = '<video playsinline autoplay muted></video><button type="button">Cancelar</button><button type="button" id="sc-mao">Escolher à mão</button>'; document.body.appendChild(bg);
+    const video = bg.querySelector('video'); let stream, stop = false;
+    const end = () => { stop = true; if (stream) stream.getTracks().forEach(t => t.stop()); bg.remove(); };
+    bg.querySelector('button').addEventListener('click', end); bg.querySelector('#sc-mao').addEventListener('click', () => { end(); aMao(); });
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); video.srcObject = stream; } catch (e) { end(); toast('Câmara indisponível: ' + e.message); aMao(); return; }
+    const cv = document.createElement('canvas'); const ctx = cv.getContext('2d');
+    (function tick() { if (stop) return; if (video.readyState === 4) { cv.width = video.videoWidth; cv.height = video.videoHeight; ctx.drawImage(video, 0, 0); const img = ctx.getImageData(0, 0, cv.width, cv.height); const q = jsQR(img.data, img.width, img.height); if (q && q.data) { end(); fecharPorCodigo(codigoDe(q.data), true); return; } } requestAnimationFrame(tick); })();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13283a">
+<title>Requinte · Menu</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="estilos.css">
+<script src="config.js"></script>
+<script src="comum.js"></script>
+</head>
+<body>
+<header class="top wrap"><div class="brand" id="brand">Requinte · CNB<small>Menu</small></div><div class="lang" style="margin-left:auto"><button type="button" data-l="pt" class="on">PT</button><button type="button" data-l="en">EN</button></div></header>
+<section class="view wrap">
+  <div id="sem-mesa" class="empty" hidden>Leia o QR da sua mesa para abrir o menu.<br><span class="muted" style="font-size:13px">Scan the QR code on your table to open the menu.</span></div>
+  <div id="app" hidden>
+    <div class="c-head"><div><h1 id="c-nome">Requinte Wine Restaurante</h1><div class="mesa"><span id="c-clube"></span> · <span id="c-mesa-lbl">Mesa —</span></div><div class="wifi" id="c-wifi"></div></div><button class="btn sm ghost" id="c-myorders" type="button"><span data-t="meus">Os meus pedidos</span> <span class="badge" id="c-ord-badge" hidden>0</span></button></div>
+    <p class="muted" id="c-boas" style="margin:0 0 10px"></p>
+    <div class="hl" id="c-hl"></div>
+    <div class="cats" id="c-cats"></div>
+    <input id="c-search" placeholder="Procurar no menu…" style="width:100%;margin:4px 0 8px" aria-label="Procurar">
+    <div id="c-menu"></div>
+    <div class="my-orders" id="c-orders"></div>
+  </div>
+</section>
+<div class="callbar" id="c-callbar" hidden><button type="button" id="c-call" data-t="chamar">Chamar garçom</button></div>
+<div class="cartbar" id="c-cartbar" hidden><div><small class="muted" data-t="carrinho">Pedido da mesa</small><br><b id="c-cart-total" class="num">0 MT</b></div><button type="button" id="c-cart-open"><span data-t="ver">Ver pedido</span> (<span id="c-cart-n">0</span>)</button></div>
+<div id="sheet-root"></div><div id="toast-root"></div>
+<script>
+(async function () {
+  const { api, toast, openSheet, closeSheet, fmt, hhmm, mins, esc } = U;
+  const T = { pt: { meus: 'Os meus pedidos', chamar: 'Chamar garçom', carrinho: 'Pedido da mesa', ver: 'Ver pedido', add: 'Adicionar', combina: 'Combina com', nota: 'Nota para a cozinha', notaEx: 'ex.: sem cebola, bem passado', tam: 'Tamanho', extras: 'Extras', confirmar: 'Confirmar pedido', total: 'Total', bebida: 'Alguma bebida para acompanhar?', sobremesa: 'Uma sobremesa ou um café para fechar?', depois: 'Depois de confirmar, para alterar chame o garçom. A conta paga-se no fim.', motivo: 'Diga-nos o motivo para o garçom vir preparado.', conta: 'Pedir a conta', pessoas: 'Para quantas pessoas quer dividir? (opcional)', enviado: 'Pedido enviado. O garçom já o recebe.', chamado: 'O seu garçom já vem.', contaPedida: 'Conta pedida. O garçom traz já.', jaChamou: 'Já chamou há {m} min. O garçom já vem.', estados: ['Enviado', 'Recebido', 'Em preparação', 'Entregue'], chamada: 'Garçom chamado', contaTit: 'Conta pedida', avez: 'A avisar', vem: 'Já vem', indisp: 'esgotado', remover: 'remover', sug: '★ Sugestão da casa', procurar: 'Procurar no menu…' },
+    en: { meus: 'My orders', chamar: 'Call waiter', carrinho: 'Table order', ver: 'View order', add: 'Add', combina: 'Goes well with', nota: 'Note for the kitchen', notaEx: 'e.g. no onion, well done', tam: 'Size', extras: 'Extras', confirmar: 'Confirm order', total: 'Total', bebida: 'Something to drink with it?', sobremesa: 'A dessert or a coffee to finish?', depois: 'After confirming, call the waiter to change anything. You pay at the end.', motivo: 'Tell us why so the waiter comes prepared.', conta: 'Ask for the bill', pessoas: 'Split between how many? (optional)', enviado: 'Order sent. Your waiter has it.', chamado: 'Your waiter is on the way.', contaPedida: 'Bill requested. Coming right up.', jaChamou: 'You called {m} min ago. The waiter is coming.', estados: ['Sent', 'Received', 'Being prepared', 'Delivered'], chamada: 'Waiter called', contaTit: 'Bill requested', avez: 'Notifying', vem: 'On the way', indisp: 'sold out', remover: 'remove', sug: '★ House favourite', procurar: 'Search the menu…' } };
+  let L = 'pt'; const t = k => T[L][k];
+  const code = new URLSearchParams(location.search).get('m');
+  if (!code) { document.getElementById('sem-mesa').hidden = false; return; }
+  let M, mesa, visita, carrinho = [], sugs = [], estado = { pedidos: [], chamadas: [] };
+  try { visita = JSON.parse(localStorage.getItem('cnb-visita-' + code) || 'null'); } catch (e) {}
+  // menu com cache local de 10 min (poupa dados móveis)
+  try { const c = JSON.parse(localStorage.getItem('cnb-menu') || 'null'); if (c && Date.now() - c.t < 600000) M = c.m; } catch (e) {}
+  try { mesa = await api('mesaPorCodigo', code); } catch (e) { document.getElementById('sem-mesa').hidden = false; document.getElementById('sem-mesa').textContent = e.message; return; }
+  if (!visita || Date.now() - visita.t > 3 * 3600000) { visita = { id: 'V' + Date.now().toString(36), t: Date.now() }; try { localStorage.setItem('cnb-visita-' + code, JSON.stringify(visita)); } catch (e) {} }
+  if (!M) { M = await api('menuPublico'); try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }
+  else api('menuPublico').then(m => { M = m; try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }).catch(() => {});
+  const byId = {}; M.menu.forEach(c => c.itens.forEach(i => { i.catNome = c.nome; byId[i.id] = i; }));
+  const nome = i => (L === 'en' && i.nome_en) ? i.nome_en : i.nome;
+  document.getElementById('app').hidden = false; document.getElementById('c-nome').textContent = M.nome || CNB.NOME; document.getElementById('c-clube').textContent = M.clube || CNB.CLUBE;
+  document.getElementById('c-mesa-lbl').textContent = (L === 'en' ? 'Table ' : 'Mesa ') + mesa.nome; document.getElementById('c-boas').textContent = M.textos.boas_vindas || '';
+  if (M.wifi && M.wifi.nome) document.getElementById('c-wifi').textContent = 'Wi-Fi: ' + M.wifi.nome + (M.wifi.senha ? ' · ' + M.wifi.senha : '');
+  document.getElementById('c-callbar').hidden = false;
+  function applyLang() { document.querySelectorAll('[data-t]').forEach(e => e.textContent = t(e.dataset.t)); document.getElementById('c-search').placeholder = t('procurar'); document.getElementById('c-mesa-lbl').textContent = (L === 'en' ? 'Table ' : 'Mesa ') + mesa.nome; render(); }
+  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => { L = b.dataset.l; document.querySelectorAll('.lang button').forEach(x => x.classList.toggle('on', x === b)); applyLang(); }));
+  function horarioOk(h) { if (!h) return true; const [a, b] = h.split('-'); const n = new Date().toTimeString().slice(0, 5); return n >= a && n <= b; }
+  function render() {
+    document.getElementById('c-hl').innerHTML = M.destaques.map(d => { const cor = { prato_do_dia: 'acc', promocao: 'sea' }[d.tipo] || ''; const tipo = { prato_do_dia: L === 'en' ? 'Dish of the day' : 'Prato do dia', chef: L === 'en' ? "Chef's suggestion" : 'Sugestão do chef', promocao: L === 'en' ? 'Promotion' : 'Promoção', evento: L === 'en' ? 'Event' : 'Evento' }[d.tipo] || d.tipo; return `<div class="h ${cor}"><div><span class="eyebrow">${esc(tipo)}</span><b>${esc(d.titulo)}</b><small>${esc(d.texto)}</small></div>${d.item && byId[d.item] ? `<button type="button" data-item="${d.item}">${L === 'en' ? 'See in menu' : 'Ver no menu'}</button>` : ''}</div>`; }).join('');
+    document.querySelectorAll('#c-hl button').forEach(b => b.addEventListener('click', () => itemSheet(b.dataset.item)));
+    const cats = document.getElementById('c-cats'); cats.innerHTML = M.menu.map(c => `<button type="button" data-cat="${esc(c.nome)}">${esc(c.nome)}</button>`).join('');
+    cats.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { const g = document.querySelector(`[data-grp="${CSS.escape(b.dataset.cat)}"]`); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); cats.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }));
+    renderMenu(''); renderOrders(); cartBar();
+  }
+  function renderMenu(q) {
+    q = (q || '').toLowerCase();
+    document.getElementById('c-menu').innerHTML = M.menu.map(c => { const its = c.itens.filter(i => !q || nome(i).toLowerCase().includes(q)); if (!its.length) return ''; return `<div class="grp" data-grp="${esc(c.nome)}"><h2>${esc(c.nome)}</h2>${its.map(i => `<button class="item" type="button" data-item="${i.id}"><span class="n">${esc(nome(i))}${i.etiquetas.includes('chef') ? `<span class="star">${t('sug')}</span>` : ''}${i.descricao ? `<br><span class="muted" style="font-weight:400;font-size:13px">${esc(L === 'en' && i.descricao_en ? i.descricao_en : i.descricao)}</span>` : ''}${M.regras[i.id] ? `<br><span class="inc">${t('combina')}…</span>` : ''}</span><span class="p num">${i.variantes.length ? (L === 'en' ? 'from ' : 'desde ') + fmt(Math.min(...i.variantes.map(v => v.preco))) : fmt(i.preco)}</span></button>`).join('')}</div>`; }).join('');
+    document.querySelectorAll('#c-menu .item').forEach(b => b.addEventListener('click', () => itemSheet(b.dataset.item)));
+  }
+  document.getElementById('c-search').addEventListener('input', e => renderMenu(e.target.value));
+  function itemSheet(id) {
+    const it = byId[id]; if (!it) return; const st = { qtd: 1, v: 0, mods: new Map(), extras: new Set() };
+    const regra = M.regras[id]; const sug = (regra && horarioOk(regra.horario) ? regra.itens : []).map(x => byId[x]).filter(Boolean);
+    const modGroups = it.modificadores || [];
+    openSheet(`<span class="eyebrow">${esc(it.catNome)}</span><h3>${esc(nome(it))}</h3>${it.descricao ? `<p class="muted" style="margin:0 0 8px">${esc(L === 'en' && it.descricao_en ? it.descricao_en : it.descricao)}</p>` : ''}<div class="price num" id="sh-price"></div>
+      ${it.variantes.length ? `<div class="eyebrow">${t('tam')}</div><div class="opts" id="sh-var">${it.variantes.map((v, i) => `<button type="button" class="opt ${i === 0 ? 'on' : ''}" data-i="${i}"><span>${esc(v.nome)}</span><span class="num">${fmt(v.preco)}</span></button>`).join('')}</div>` : ''}
+      ${modGroups.map((g, gi) => `<div class="eyebrow">${esc(g.nome)}</div><div class="opts" data-g="${gi}">${g.opcoes.map((o, oi) => `<button type="button" class="opt" data-o="${oi}"><span>${esc(o.nome)}</span><span class="num">${o.preco ? '+ ' + fmt(o.preco) : ''}</span></button>`).join('')}</div>`).join('')}
+      <label class="eyebrow" for="sh-nota">${t('nota')}</label><input id="sh-nota" placeholder="${t('notaEx')}" style="width:100%;margin:4px 0 10px">
+      ${sug.length ? `<div class="sug"><span class="eyebrow">${t('combina')}</span><div class="chips">${sug.map(s => `<button type="button" class="chip" data-i="${s.id}">+ ${esc(nome(s))} · ${fmt(s.preco)}</button>`).join('')}</div></div>` : ''}
+      <div class="row" style="justify-content:space-between;margin-top:8px"><div class="qty"><button type="button" id="sh-minus">−</button><span id="sh-qty">1</span><button type="button" id="sh-plus">+</button></div><button class="btn primary" id="sh-add" type="button">${t('add')}</button></div>`, r => {
+      const price = () => { let p = it.variantes.length ? it.variantes[st.v].preco : it.preco; st.mods.forEach((set, gi) => set.forEach(oi => p += modGroups[gi].opcoes[oi].preco)); r.querySelector('#sh-price').textContent = fmt(p * st.qtd); return p; }; price();
+      r.querySelectorAll('#sh-var .opt').forEach(b => b.addEventListener('click', () => { st.v = +b.dataset.i; r.querySelectorAll('#sh-var .opt').forEach(x => x.classList.toggle('on', x === b)); price(); }));
+      r.querySelectorAll('[data-g]').forEach(g => g.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { const gi = +g.dataset.g, oi = +b.dataset.o; if (!st.mods.has(gi)) st.mods.set(gi, new Set()); const s = st.mods.get(gi); s.has(oi) ? s.delete(oi) : s.add(oi); b.classList.toggle('on'); price(); })));
+      r.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { const i = b.dataset.i; st.extras.has(i) ? st.extras.delete(i) : st.extras.add(i); b.classList.toggle('on'); }));
+      r.querySelector('#sh-plus').addEventListener('click', () => { st.qtd++; r.querySelector('#sh-qty').textContent = st.qtd; price(); });
+      r.querySelector('#sh-minus').addEventListener('click', () => { if (st.qtd > 1) { st.qtd--; r.querySelector('#sh-qty').textContent = st.qtd; price(); } });
+      r.querySelector('#sh-add').addEventListener('click', () => {
+        const p = price(); const mods = []; st.mods.forEach((set, gi) => set.forEach(oi => mods.push(modGroups[gi].opcoes[oi].nome)));
+        carrinho.push({ item: it.id, nome: it.nome, cat: it.catNome, qtd: st.qtd, preco: p, variante: it.variantes.length ? it.variantes[st.v].nome : '', mods, nota: r.querySelector('#sh-nota').value.trim() });
+        sug.forEach(s => { sugs.push({ tipo: 'combina', origem: it.id, item: s.id, aceite: st.extras.has(s.id) }); if (st.extras.has(s.id)) carrinho.push({ item: s.id, nome: s.nome, cat: s.catNome, qtd: 1, preco: s.preco, variante: '', mods: [], nota: '' }); });
+        closeSheet(); cartBar(); toast((L === 'en' ? 'Added to the order of table ' : 'Adicionado ao pedido da mesa ') + mesa.nome);
+      });
+    });
+  }
+  function cartBar() { const n = carrinho.reduce((a, l) => a + l.qtd, 0); document.getElementById('c-cartbar').hidden = !n; document.getElementById('c-cart-n').textContent = n; document.getElementById('c-cart-total').textContent = fmt(carrinho.reduce((a, l) => a + l.qtd * l.preco, 0)); document.getElementById('c-callbar').style.bottom = n ? 'calc(76px + env(safe-area-inset-bottom,0px))' : 'calc(16px + env(safe-area-inset-bottom,0px))'; }
+  document.getElementById('c-cart-open').addEventListener('click', cartSheet);
+  function cartSheet() {
+    const tot = carrinho.reduce((a, l) => a + l.qtd * l.preco, 0);
+    const isBebida = c => /^(1B|3L)/.test(c) || /bebida|cerveja|cidra|vinho|cocktail|sumo|refresc|caf|chá|whisky|gin|tequila|rum|brandy|conhaque|licor|espumante|champan|batido|slush|frapp|água|mocktail|tónic/i.test(c);
+    const temBebida = carrinho.some(l => isBebida(byId[l.item].catNome));
+    const temPrincipal = carrinho.some(l => M.principais.includes(byId[l.item].catNome)); const temSobremesa = carrinho.some(l => M.sobremesas.includes(byId[l.item].catNome));
+    let lemb = null; if (!temBebida && M.lembretes.bebidas.length) lemb = { titulo: t('bebida'), itens: M.lembretes.bebidas, tipo: 'bebida' }; else if (temPrincipal && !temSobremesa && M.lembretes.sobremesa.length) lemb = { titulo: t('sobremesa'), itens: M.lembretes.sobremesa, tipo: 'sobremesa' };
+    openSheet(`<h3>${t('carrinho')} ${esc(mesa.nome)}</h3><div class="cart-lines">${carrinho.map((l, i) => `<div class="cart-line"><div><b>${l.qtd} × ${esc(nome(byId[l.item]) || l.nome)}</b>${l.variante ? `<small>${esc(l.variante)}</small>` : ''}${l.mods.length ? `<small>${esc(l.mods.join(', '))}</small>` : ''}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}</div><div style="text-align:right"><span class="num">${fmt(l.qtd * l.preco)}</span><br><button class="btn sm ghost" type="button" data-rm="${i}">${t('remover')}</button></div></div>`).join('')}</div>
+      ${lemb ? `<div class="sug" id="lemb"><span class="eyebrow">${lemb.titulo}</span><div class="chips">${lemb.itens.map(x => byId[x] ? `<button type="button" class="chip" data-i="${x}">+ ${esc(nome(byId[x]))} · ${fmt(byId[x].preco)}</button>` : '').join('')}</div></div>` : ''}
+      <div class="row" style="justify-content:space-between;margin-top:10px"><b class="num" style="font-size:18px">${t('total')} ${fmt(tot)}</b><button class="btn primary" id="cl-confirm" type="button" ${carrinho.length ? '' : 'disabled'}>${t('confirmar')}</button></div><p class="muted" style="font-size:12px;margin:10px 0 0">${t('depois')}</p>`, r => {
+      const extras = new Set();
+      r.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { carrinho.splice(+b.dataset.rm, 1); closeSheet(); cartBar(); if (carrinho.length) cartSheet(); }));
+      r.querySelectorAll('#lemb .chip').forEach(b => b.addEventListener('click', () => { const i = b.dataset.i; extras.has(i) ? extras.delete(i) : extras.add(i); b.classList.toggle('on'); }));
+      r.querySelector('#cl-confirm').addEventListener('click', async () => {
+        r.querySelector('#cl-confirm').disabled = true;
+        if (lemb) lemb.itens.forEach(x => { sugs.push({ tipo: lemb.tipo, origem: '', item: x, aceite: extras.has(x) }); if (extras.has(x) && byId[x]) carrinho.push({ item: x, nome: byId[x].nome, cat: byId[x].catNome, qtd: 1, preco: byId[x].preco, variante: '', mods: [], nota: '' }); });
+        try { await api('enviarPedido', code, visita.id, carrinho, sugs); carrinho = []; sugs = []; closeSheet(); cartBar(); toast(t('enviado')); poll(); } catch (e) { toast(e.message); r.querySelector('#cl-confirm').disabled = false; }
+      });
+    });
+  }
+  document.getElementById('c-call').addEventListener('click', () => {
+    openSheet(`<h3>${t('chamar')} · ${esc(mesa.nome)}</h3><p class="muted" style="margin:0 0 10px">${t('motivo')}</p><div class="opts">${M.motivos.map(m => `<button type="button" class="opt" data-m="${esc(m)}"><span>${esc(m)}</span></button>`).join('')}<button type="button" class="opt" data-m="Conta"><span><b>${t('conta')}</b></span></button></div><label class="eyebrow">${t('pessoas')}</label><input id="ch-p" inputmode="numeric" style="width:100%;margin-top:4px">`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', async () => {
+      try { const res = await api('chamarGarcom', code, b.dataset.m, r.querySelector('#ch-p').value); closeSheet(); if (res.repetida) { const c = estado.chamadas.find(x => x.id === res.id); toast(t('jaChamou').replace('{m}', c ? Math.round(mins(c.c0)) : '1')); } else toast(b.dataset.m === 'Conta' ? t('contaPedida') : t('chamado')); poll(); } catch (e) { toast(e.message); }
+    })));
+  });
+  document.getElementById('c-myorders').addEventListener('click', () => document.getElementById('c-orders').scrollIntoView({ behavior: 'smooth' }));
+  function renderOrders() {
+    const el = document.getElementById('c-orders'); const ps = estado.pedidos, cs = estado.chamadas;
+    document.getElementById('c-ord-badge').hidden = !ps.length; document.getElementById('c-ord-badge').textContent = ps.length;
+    const nivelP = p => p.t3 ? 4 : p.t2 ? 3 : p.t1 ? 2 : 1;
+    el.innerHTML = (ps.length || cs.length ? `<h2 class="section-title">${t('meus')}</h2>` : '') +
+      cs.map(c => `<div class="ord"><div><b>${c.motivo === 'Conta' ? t('contaTit') : t('chamada')}</b><br><small class="muted">${esc(c.motivo)} · ${hhmm(c.c0)}</small></div><span class="pill sea">${c.aceite ? t('vem') : t('avez')} · ${Math.round(mins(c.c0))} min</span></div>`).join('') +
+      ps.map(p => { const n = nivelP(p); return `<div class="ord"><div><b>${p.linhas.map(l => l.qtd + '× ' + esc(l.nome) + (l.indisponivel ? ` <span class="pill crit">${t('indisp')}</span>` : '')).join(', ')}</b><br><small class="muted">${hhmm(p.t0)} · ${fmt(p.total)}</small></div><div style="text-align:right"><span class="pill ${n === 4 ? 'ok' : 'sea'}">${t('estados')[n - 1]}</span><div class="steps" style="margin-top:6px">${[1, 2, 3, 4].map(k => `<i class="${k <= n ? 'on' : ''}"></i>`).join('')}</div></div></div>`; }).join('');
+  }
+  async function poll() { try { estado = await api('estadoMesaCliente', code, visita.id); renderOrders(); } catch (e) {} }
+  render(); poll(); setInterval(poll, CNB.POLL_CLIENTE_MS);
+})();
+</script>
+</body>
+</html>
