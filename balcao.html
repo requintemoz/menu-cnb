@@ -36,7 +36,7 @@
 <script>
 (function () {
   const { api, toast, openSheet, closeSheet, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
-  let S = null, token = null, user = null, sel = new Set(), foraAntes = 0; const off = offlineBar(); armarSom();
+  let S = null, token = null, user = null, sel = new Set(), foraAntes = 0, chVistas = null; const off = offlineBar(); armarSom();
   setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
   function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('b-who').textContent = user.nome; load(); setInterval(load, CNB.POLL_STAFF_MS); }
   const saved = sess.get(); if (saved) start(saved); else loginUI(['caixa', 'supervisor', 'gerente'], start);
@@ -53,6 +53,13 @@
     const ped = S.pedidos.filter(p => !p.t2), chs = S.chamadas.filter(c => c.motivo !== 'Conta'), cts = S.chamadas.filter(c => c.motivo === 'Conta');
     const fora = ped.filter(p => mins(p.t0) > (p.t1 ? L.registar : L.aceitar)).length + S.chamadas.filter(c => mins(c.c0) > L.chamada).length;
     if (fora > foraAntes) beep(3); foraAntes = fora;
+    // aviso sonoro a cada chamada nova; conta pedida tem toque mais longo e aviso no ecrã
+    if (chVistas) {
+      const novasCt = cts.filter(c => !chVistas.has(c.id)); const novasCh = chs.filter(c => !chVistas.has(c.id));
+      if (novasCt.length) { beep(5); toast('💰 Conta pedida na mesa ' + novasCt.map(c => c.mesa).join(', '), 6000); }
+      else if (novasCh.length) beep(2);
+    }
+    chVistas = new Set(S.chamadas.map(c => c.id));
     const med = S.relatorio.totais.t2t0_med;
     document.getElementById('b-kpis').innerHTML = `<div class="kpi ${semG ? 'crit' : ''}"><b class="num">${semG}</b><small>mesas sem garçom</small></div><div class="kpi"><b class="num">${garcons.length}</b><small>garçons em turno</small></div><div class="kpi"><b class="num">${ped.length + S.chamadas.length}</b><small>pendentes</small></div><div class="kpi ${fora ? 'crit' : ''}"><b class="num">${fora}</b><small>fora do limite</small></div><div class="kpi"><b class="num">${med == null ? '—' : med.toFixed(1)}</b><small>min pedido → registo (med)</small></div>`;
     document.getElementById('b-staff').innerHTML = S.emTurno.map(t => { const ms = S.mesas.filter(m => m.garcom === t.id).length; const pend = S.pedidos.filter(p => (p.g1 ? p.g1 === t.id : atrib[p.mesa] === t.id)).length + S.chamadas.filter(c => (c.g ? c.g === t.id : atrib[c.mesa] === t.id)).length; return `<tr><td><b>${esc(t.nome)}</b> <span class="muted">${t.perfil}</span></td><td class="num">${hhmm(t.entrada)}</td><td class="num">${ms}</td><td class="num">${pend}</td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Ninguém em turno.</td></tr>';
