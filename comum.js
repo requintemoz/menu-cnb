@@ -22,7 +22,7 @@
     document.getElementById('l-go').addEventListener('click', go); document.getElementById('l-pin').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
   }
   // som de aviso (só depois de um toque do utilizador, exigência dos browsers)
-  let actx = null; function beep(n) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); for (let i = 0; i < (n || 1); i++) { const o = actx.createOscillator(), g = actx.createGain(); o.connect(g); g.connect(actx.destination); o.frequency.value = 880; g.gain.value = 0.15; o.start(actx.currentTime + i * 0.25); o.stop(actx.currentTime + i * 0.25 + 0.15); } } catch (e) {} }
+  let actx = null; function beep(n, freq) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); for (let i = 0; i < (n || 1); i++) { const o = actx.createOscillator(), g = actx.createGain(); o.connect(g); g.connect(actx.destination); o.frequency.value = freq || 880; g.gain.value = 0.15; o.start(actx.currentTime + i * 0.25); o.stop(actx.currentTime + i * 0.25 + 0.15); } } catch (e) {} }
   function armarSom() { document.addEventListener('pointerdown', () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }, { once: true }); }
   // indicador de ligação
   function offlineBar() { const el = document.createElement('div'); el.className = 'offline'; el.hidden = true; el.textContent = 'Sem ligação. A tentar de novo…'; document.body.appendChild(el); return { on() { el.hidden = false; }, off() { el.hidden = true; } }; }
