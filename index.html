@@ -12,7 +12,25 @@
 <script src="config.js"></script>
 <script src="comum.js"></script>
 </head>
-<body>
+<body class="cliente">
+<svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-sopa" viewBox="0 0 24 24"><path d="M4 11h16a8 8 0 0 1-5 7.4V20H9v-1.6A8 8 0 0 1 4 11Z"/><path d="M9.5 7c0-1.2 1-1.6 1-2.8M13.5 7c0-1.2 1-1.6 1-2.8"/></symbol>
+<symbol id="i-petisco" viewBox="0 0 24 24"><path d="M7.5 4.5h9l4 5L12 20.5 3.5 9.5Z"/><path d="M3.5 9.5h17M12 20.5 9 9.5l2-5M12 20.5l3-11-2-5"/></symbol>
+<symbol id="i-peixe" viewBox="0 0 24 24"><path d="M2.5 12S6 7 11 7c4.5 0 7 3.2 8 5-1 1.8-3.5 5-8 5-5 0-8.5-5-8.5-5Z"/><path d="M19 12l3.5-2.8v5.6Z"/><circle cx="6.8" cy="11" r=".9" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-talheres" viewBox="0 0 24 24"><path d="M7 3v6M4.8 3v5a2.2 2.2 0 0 0 4.4 0V3M7 11v10"/><path d="M16.8 3v18M16.8 3c2 1.5 2.6 5 2.6 7.5h-2.6"/></symbol>
+<symbol id="i-burger" viewBox="0 0 24 24"><path d="M4.5 10a7.5 7.5 0 0 1 15 0Z"/><path d="M4.5 13.2h15"/><path d="M4.5 16.4h15v.8a2.8 2.8 0 0 1-2.8 2.8H7.3a2.8 2.8 0 0 1-2.8-2.8Z"/></symbol>
+<symbol id="i-pizza" viewBox="0 0 24 24"><path d="M12 21 4.2 6.2a16 16 0 0 1 15.6 0Z"/><path d="M5.8 9.2a12.5 12.5 0 0 1 12.4 0"/><circle cx="12" cy="12" r="1"/><circle cx="10.2" cy="15.8" r=".8"/></symbol>
+<symbol id="i-batata" viewBox="0 0 24 24"><path d="M6 10.5 7.6 21h8.8L18 10.5Z"/><path d="M8.5 10.5v-6M11.5 10.5V3.2M14.5 10.5V4M16.6 10.5 18.3 5"/></symbol>
+<symbol id="i-gelado" viewBox="0 0 24 24"><path d="M8 11.5h8L12 21.5Z"/><path d="M7.5 11.5a4.5 4.5 0 1 1 9 0"/></symbol>
+<symbol id="i-sumo" viewBox="0 0 24 24"><path d="M7 4h10l-1.4 17H8.4Z"/><path d="M13.5 4l4.5-2.2M7.6 9.5h8.8"/></symbol>
+<symbol id="i-cafe" viewBox="0 0 24 24"><path d="M4 9h13v5.5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5Z"/><path d="M17 10h1.4a2.4 2.4 0 0 1 0 4.8H17"/><path d="M8.3 6c0-1 .8-1.2.8-2.4M12.3 6c0-1 .8-1.2.8-2.4"/></symbol>
+<symbol id="i-cocktail" viewBox="0 0 24 24"><path d="M4.5 4h15L12 13Z"/><path d="M12 13v7M8 20.5h8"/><circle cx="14.6" cy="6.8" r="1.2"/></symbol>
+<symbol id="i-cerveja" viewBox="0 0 24 24"><path d="M6 6.5h10V21H6Z"/><path d="M16 9.5h1.8a2.2 2.2 0 0 1 2.2 2.2v3.1a2.2 2.2 0 0 1-2.2 2.2H16"/><path d="M6 9.5h10"/><path d="M6 6.5a2 2 0 0 1 3.2-2.4 2.4 2.4 0 0 1 4.4-.3A2 2 0 0 1 16 6.5"/></symbol>
+<symbol id="i-vinho" viewBox="0 0 24 24"><path d="M8 3h8c0 5-1.5 8.2-4 8.2S8 8 8 3Z"/><path d="M12 11.2V19M8.5 21h7M8.4 6.5h7.2"/></symbol>
+<symbol id="i-espumante" viewBox="0 0 24 24"><path d="M10.2 3h3.6c.5 5.2.2 9.4-1.8 9.4s-2.3-4.2-1.8-9.4Z"/><path d="M12 12.4V19M9.5 21h5"/><circle cx="12" cy="6" r=".5" fill="currentColor" stroke="none"/><circle cx="11.2" cy="8.6" r=".5" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-garrafa" viewBox="0 0 24 24"><path d="M10.2 2.8h3.6v4.4c2 1 2.8 2.6 2.8 5V21.2H7.4V12.2c0-2.4.8-4 2.8-5Z"/><path d="M7.4 14.5h9.2"/></symbol>
+<symbol id="i-tumbler" viewBox="0 0 24 24"><path d="M6 4h12l-1.2 17H7.2Z"/><path d="M7 13h10"/></symbol>
+</svg>
 <header class="top wrap"><div class="brand" id="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte · CNB<small>Menu</small></span></div><div class="lang" style="margin-left:auto"><button type="button" data-l="pt" class="on">PT</button><button type="button" data-l="en">EN</button></div></header>
 <section class="view wrap">
   <div id="sem-mesa" class="empty welcome" hidden><picture><source srcset="img/requinte-claro.webp" media="(prefers-color-scheme: dark)"><img class="logo-req" src="img/requinte.webp" alt="Requinte Wine Restaurante" width="480" height="279"></picture><img class="logo-cnb" src="img/cnb.webp" alt="Clube Náutico da Beira" width="240" height="240"><p id="sem-mesa-msg">Leia o QR da sua mesa para abrir o menu.<br><span class="muted" style="font-size:13px">Scan the QR code on your table to open the menu.</span></p></div>
@@ -56,6 +74,20 @@
   else api('menuPublico').then(m => { M = m; try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }).catch(() => {});
   const byId = {}; M.menu.forEach(c => c.itens.forEach(i => { i.catNome = c.nome; byId[i.id] = i; }));
   const nome = i => (L === 'en' && i.nome_en) ? i.nome_en : i.nome;
+  // fotografias: aceita links de partilha do Google Drive e converte para imagem directa
+  const fotoSrc = (u, w) => { const m = String(u || '').match(/[-\w]{25,}/); return m && /drive\.google/.test(u) ? 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000) : u; };
+  // ícones das secções, ao estilo do menu impresso
+  const icone = n => { n = String(n).toLowerCase();
+    if (/começar/.test(n)) return 'sopa'; if (/petisco/.test(n)) return 'petisco'; if (/\bmar\b|marisco/.test(n)) return 'peixe';
+    if (/carnes/.test(n)) return 'talheres'; if (/hambúrguer|refeições/.test(n)) return 'burger'; if (/pizza/.test(n)) return 'pizza';
+    if (/acompanhamentos/.test(n)) return 'batata'; if (/terminar|sobremesa/.test(n)) return 'gelado';
+    if (/sumos|mocktails|refrescos|batidos/.test(n)) return 'sumo'; if (/café|cafés|chás/.test(n)) return 'cafe';
+    if (/cocktails|licores|tequila|gin tónico/.test(n)) return 'cocktail'; if (/cervejas/.test(n)) return 'cerveja';
+    if (/whisky|gin ao|conhaque/.test(n)) return 'tumbler'; if (/espumantes|champanhe/.test(n)) return 'espumante';
+    if (/garrafas/.test(n)) return 'garrafa'; if (/vinho|brancos|rosés|tintos|porto/.test(n)) return 'vinho';
+    return 'talheres'; };
+  const svgIc = n => `<svg class="ic" aria-hidden="true"><use href="#i-${icone(n)}"/></svg>`;
+  let jaAnimado = false, spy = null;
   document.getElementById('app').hidden = false; document.getElementById('c-nome').textContent = M.nome || CNB.NOME; document.getElementById('c-clube').textContent = M.clube || CNB.CLUBE;
   document.getElementById('c-mesa-lbl').textContent = (L === 'en' ? 'Table ' : 'Mesa ') + mesa.nome; document.getElementById('c-boas').textContent = M.textos.boas_vindas || '';
   if (M.wifi && M.wifi.nome) document.getElementById('c-wifi').textContent = 'Wi-Fi: ' + M.wifi.nome + (M.wifi.senha ? ' · ' + M.wifi.senha : '');
@@ -72,15 +104,19 @@
   }
   function renderMenu(q) {
     q = (q || '').toLowerCase();
-    document.getElementById('c-menu').innerHTML = M.menu.map(c => { const its = c.itens.filter(i => !q || nome(i).toLowerCase().includes(q)); if (!its.length) return ''; return `<div class="grp" data-grp="${esc(c.nome)}"><h2>${esc(c.nome)}</h2>${its.map(i => `<button class="item" type="button" data-item="${i.id}"><span class="n">${esc(nome(i))}${i.etiquetas.includes('chef') ? `<span class="star">${t('sug')}</span>` : ''}${i.descricao ? `<br><span class="muted" style="font-weight:400;font-size:13px">${esc(L === 'en' && i.descricao_en ? i.descricao_en : i.descricao)}</span>` : ''}${M.regras[i.id] ? `<br><span class="inc">${t('combina')}…</span>` : ''}</span><span class="p num">${i.variantes.length ? (L === 'en' ? 'from ' : 'desde ') + fmt(Math.min(...i.variantes.map(v => v.preco))) : fmt(i.preco)}</span></button>`).join('')}</div>`; }).join('');
+    const anim = !jaAnimado && !q; jaAnimado = true; let gi = 0;
+    document.getElementById('c-menu').innerHTML = M.menu.map(c => { const its = c.itens.filter(i => !q || nome(i).toLowerCase().includes(q)); if (!its.length) return ''; return `<div class="grp${anim ? ' anim' : ''}" data-grp="${esc(c.nome)}"${anim ? ` style="animation-delay:${Math.min(gi++ * 70, 560)}ms"` : ''}><h2>${svgIc(c.nome)}${esc(c.nome)}</h2>${its.map(i => `<button class="item" type="button" data-item="${i.id}">${i.foto ? `<img class="ith" loading="lazy" src="${esc(fotoSrc(i.foto, 160))}" alt="">` : ''}<span class="n">${esc(nome(i))}${i.etiquetas.includes('chef') ? `<span class="star">${t('sug')}</span>` : ''}${i.descricao ? `<br><span class="muted" style="font-weight:400;font-size:13px">${esc(L === 'en' && i.descricao_en ? i.descricao_en : i.descricao)}</span>` : ''}${M.regras[i.id] ? `<br><span class="inc">${t('combina')}…</span>` : ''}</span><span class="p num">${i.variantes.length ? (L === 'en' ? 'from ' : 'desde ') + fmt(Math.min(...i.variantes.map(v => v.preco))) : fmt(i.preco)}</span></button>`).join('')}</div>`; }).join('');
     document.querySelectorAll('#c-menu .item').forEach(b => b.addEventListener('click', () => itemSheet(b.dataset.item)));
+    // realça na barra de secções a que está no ecrã
+    if (spy) spy.disconnect();
+    if ('IntersectionObserver' in window) { const cats = document.getElementById('c-cats'); spy = new IntersectionObserver(es => { es.forEach(e => { if (!e.isIntersecting) return; const n = e.target.dataset.grp; cats.querySelectorAll('button').forEach(x => { const on = x.dataset.cat === n; x.classList.toggle('on', on); if (on) x.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); }); }); }, { rootMargin: '-25% 0px -65% 0px' }); document.querySelectorAll('#c-menu .grp').forEach(g => spy.observe(g)); }
   }
   document.getElementById('c-search').addEventListener('input', e => renderMenu(e.target.value));
   function itemSheet(id) {
     const it = byId[id]; if (!it) return; const st = { qtd: 1, v: 0, mods: new Map(), extras: new Set() };
     const regra = M.regras[id]; const sug = (regra && horarioOk(regra.horario) ? regra.itens : []).map(x => byId[x]).filter(Boolean);
     const modGroups = it.modificadores || [];
-    openSheet(`<span class="eyebrow">${esc(it.catNome)}</span><h3>${esc(nome(it))}</h3>${it.descricao ? `<p class="muted" style="margin:0 0 8px">${esc(L === 'en' && it.descricao_en ? it.descricao_en : it.descricao)}</p>` : ''}<div class="price num" id="sh-price"></div>
+    openSheet(`<span class="eyebrow">${esc(it.catNome)}</span><h3>${esc(nome(it))}</h3>${it.foto ? `<img class="foto" src="${esc(fotoSrc(it.foto, 1000))}" alt="" loading="lazy">` : ''}${it.descricao ? `<p class="muted" style="margin:0 0 8px">${esc(L === 'en' && it.descricao_en ? it.descricao_en : it.descricao)}</p>` : ''}<div class="price num" id="sh-price"></div>
       ${it.variantes.length ? `<div class="eyebrow">${t('tam')}</div><div class="opts" id="sh-var">${it.variantes.map((v, i) => `<button type="button" class="opt ${i === 0 ? 'on' : ''}" data-i="${i}"><span>${esc(v.nome)}</span><span class="num">${fmt(v.preco)}</span></button>`).join('')}</div>` : ''}
       ${modGroups.map((g, gi) => `<div class="eyebrow">${esc(g.nome)}</div><div class="opts" data-g="${gi}">${g.opcoes.map((o, oi) => `<button type="button" class="opt" data-o="${oi}"><span>${esc(o.nome)}</span><span class="num">${o.preco ? '+ ' + fmt(o.preco) : ''}</span></button>`).join('')}</div>`).join('')}
       <label class="eyebrow" for="sh-nota">${t('nota')}</label><input id="sh-nota" placeholder="${t('notaEx')}" style="width:100%;margin:4px 0 10px">
