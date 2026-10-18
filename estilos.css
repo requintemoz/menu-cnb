@@ -212,3 +212,31 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .welcome .logo-cnb{width:72px;height:72px}
 .welcome p{margin:0;font-size:15px;color:var(--ink)}
 .grp h2::after{content:"";display:block;width:34px;height:3px;border-radius:2px;background:var(--accent);opacity:.45;margin-top:5px}
+
+/* ---------- página do cliente — estilo do menu impresso ---------- */
+@media (prefers-color-scheme: light){
+  body.cliente{--bg:#f4edde;--surface:#fbf6ea;--surface2:#eee4cf;--ink:#43301f;--muted:#8a7963;--line:#e3d6ba;--accent:#8c1f32;--accent-tint:#f1dfd2;--sea:#14616e;--sea-tint:#e2eae0;--shadow:0 1px 2px rgba(67,48,31,.08),0 6px 18px rgba(67,48,31,.09)}
+}
+body.cliente .c-head h1{margin:0}
+body.cliente .grp h2{display:flex;align-items:center;justify-content:center;gap:9px;text-transform:uppercase;letter-spacing:.14em;font-size:16px;font-weight:600;margin:10px 0 8px;text-align:center}
+body.cliente .grp h2::before{content:"";height:2px;border-radius:1px;background:var(--accent);opacity:.3;flex:1;max-width:46px}
+body.cliente .grp h2::after{content:"";height:2px;border-radius:1px;background:var(--accent);opacity:.3;flex:1;max-width:46px;margin-top:0;width:auto;display:initial}
+body.cliente .grp h2 .ic{width:21px;height:21px;flex:none;color:var(--accent);opacity:.9;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+body.cliente .item .n{flex:1}
+body.cliente .item .p{color:var(--accent)}
+.hl .h .eyebrow{display:block}
+.hl .h b{display:block;margin:3px 0 2px;font-size:18px}
+.hl .h small{display:block;line-height:1.35}
+.item .ith{width:54px;height:54px;flex:none;border-radius:10px;object-fit:cover;box-shadow:var(--shadow);background:var(--surface2)}
+.sheet .foto{display:block;width:100%;max-height:235px;object-fit:cover;border-radius:12px;margin:10px 0 12px;background:var(--surface2)}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes fadeup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  body.cliente .hl .h{animation:fadeup .5s ease-out both}
+  body.cliente .hl .h:nth-child(2){animation-delay:.09s}
+  body.cliente .hl .h:nth-child(3){animation-delay:.18s}
+  body.cliente .c-head{animation:fadeup .45s ease-out both}
+  body.cliente .grp.anim{animation:fadeup .55s ease-out both}
+  body.cliente .item,.cats button,.chip,.opt,.btn{transition:background-color .18s ease,color .18s ease,border-color .18s ease}
+  body.cliente .item:active{background:var(--surface2)}
+  .sheet .foto{animation:fadeup .4s ease-out both}
+}
