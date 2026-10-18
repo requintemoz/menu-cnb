@@ -37,18 +37,27 @@
   async function load() {
     try { S = await api('gListar', token); off.off(); } catch (e) { if (/Sessão/.test(e.message)) { sess.clear(); location.reload(); return; } off.on(); return; }
     document.getElementById('g-mesas').textContent = S.minhasMesas.length ? '· mesas ' + S.minhasMesas.join(', ') : '· sem mesas atribuídas';
-    const rows = [...S.chamadas.map(c => ({ k: 'ch', t: c.c0, o: c })), ...S.pedidos.map(p => ({ k: 'ped', t: p.t0, o: p }))].sort((a, b) => new Date(a.t) - new Date(b.t));
-    const ids = new Set(rows.map(r => r.o.id)); const novos = [...ids].filter(i => !lastIds.has(i)); if (lastIds.size && novos.length) { beep(2); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } lastIds = ids;
-    document.getElementById('g-count').textContent = rows.length ? `${S.pedidos.length} pedido(s), ${S.chamadas.length} chamada(s)` : 'nada pendente';
+    const sups = S.supervisor || [];
+    const rows = [...sups.map(x => ({ k: 'sup', t: x.c0, o: x })), ...[...S.chamadas.map(c => ({ k: 'ch', t: c.c0, o: c })), ...S.pedidos.map(p => ({ k: 'ped', t: p.t0, o: p }))].sort((a, b) => new Date(a.t) - new Date(b.t))];
+    const ids = new Set(rows.map(r => r.o.id)); const novos = [...ids].filter(i => !lastIds.has(i)); if (lastIds.size && novos.length) { const sv = novos.some(i => sups.some(x => x.id === i)); beep(sv ? 6 : 2, sv ? 520 : 880); if (navigator.vibrate) navigator.vibrate(sv ? [400, 150, 400, 150, 400] : [200, 100, 200]); } lastIds = ids;
+    document.getElementById('g-count').textContent = rows.length ? `${sups.length ? sups.length + ' ao supervisor(a), ' : ''}${S.pedidos.length} pedido(s), ${S.chamadas.length} chamada(s)` : 'nada pendente';
     const nome = id => S.nomes[id] || id || '—';
     document.getElementById('g-list').innerHTML = rows.length ? rows.map(r => {
       const m = mins(r.t); const mine = r.o.garcomMesa === user.id; const dono = r.o.garcomMesa ? (mine ? 'mesa sua' : 'mesa de ' + nome(r.o.garcomMesa)) : 'mesa sem garçom';
+      if (r.k === 'sup') return `<button class="wi crit supv" type="button" data-sup="${esc(r.o.id)}"><span class="mesa">${esc(r.o.mesa)}</span><span><b>Supervisor(a) · ${r.o.texto ? '“' + esc(r.o.texto) + '”' : 'o cliente quer falar consigo'}</b><br><span class="sub">${r.o.aceite ? 'a caminho: ' + esc(r.o.porNome || nome(r.o.por)) : 'ainda ninguém foi à mesa'}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
       if (r.k === 'ch') return `<button class="wi ${nivel(m, S.limites.chamada)}" type="button" data-ch="${r.o.id}"><span class="mesa">${esc(r.o.mesa)}</span><span><b>${r.o.motivo === 'Conta' ? 'Pedir a conta' : 'Chamada · ' + esc(r.o.motivo)}</b><br><span class="sub">${dono}${r.o.aceite ? ' · aceite por ' + nome(r.o.g) : ''}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
       const lim = r.o.t2 ? S.limites.entregar : r.o.t1 ? S.limites.registar : S.limites.aceitar;
       return `<button class="wi ${nivel(m, lim)}" type="button" data-ped="${r.o.id}"><span class="mesa">${esc(r.o.mesa)}</span><span><b>${r.o.t2 ? 'Entregar' : r.o.t1 ? 'Registar no POS' : 'Pedido novo'} · ${r.o.linhas.reduce((a, l) => a + Number(l.qtd), 0)} artigos</b><br><span class="sub">${r.o.linhas.slice(0, 3).map(l => l.qtd + '× ' + esc(l.nome)).join(', ')}${r.o.linhas.length > 3 ? '…' : ''}</span><br><span class="sub">${dono}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
     }).join('') : '<div class="empty">Sem pedidos nem chamadas. O POS avisa quando chegar algo.</div>';
     document.querySelectorAll('[data-ped]').forEach(b => b.addEventListener('click', () => pedido(b.dataset.ped)));
     document.querySelectorAll('[data-ch]').forEach(b => b.addEventListener('click', () => chamada(b.dataset.ch)));
+    document.querySelectorAll('[data-sup]').forEach(b => b.addEventListener('click', () => supervisor(b.dataset.sup)));
+  }
+  async function supervisor(id) {
+    const x = (S.supervisor || []).find(s => s.id === id); if (!x) return;
+    if (!x.aceite) { try { await api('fidSupAceitar', token, id); } catch (e) { toast(e.message); } }
+    openSheet(`<div class="detail"><span class="eyebrow">Mesa ${esc(x.mesa)} · ${hhmm(x.c0)}</span><h3>O cliente pede o(a) supervisor(a)</h3>${x.texto ? `<p>“${esc(x.texto)}”</p>` : ''}${x.cliente ? `<p class="muted">Cartão Requinte: ${esc(x.cliente)}</p>` : ''}<label class="eyebrow" for="sup-res">O que foi feito</label><textarea id="sup-res" rows="3" style="width:100%;margin-top:4px" placeholder="ex.: prato refeito, sobremesa oferecida"></textarea><div class="actions"><button class="btn primary" id="sup-ok" type="button">Marcar como resolvido</button></div></div>`, r => r.querySelector('#sup-ok').addEventListener('click', async () => { try { await api('fidSupResolver', token, id, r.querySelector('#sup-res').value); closeSheet(); toast('Registado. Obrigado.'); load(); } catch (e) { toast(e.message); } }));
+    load();
   }
   function agrupar(linhas) { // mesma ordem das categorias e artigos do Loyverse, para o garçom lançar de cima para baixo
     const ordem = S.ordemCategorias || []; const pos = c => { const i = ordem.indexOf(c); return i < 0 ? 999 : i; };
