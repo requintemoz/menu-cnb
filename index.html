@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#13283a">
 <title>Requinte · Menu</title>
+<link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="estilos.css">
 <script src="config.js"></script>
 <script src="comum.js"></script>
 </head>
 <body>
-<header class="top wrap"><div class="brand" id="brand">Requinte · CNB<small>Menu</small></div><div class="lang" style="margin-left:auto"><button type="button" data-l="pt" class="on">PT</button><button type="button" data-l="en">EN</button></div></header>
+<header class="top wrap"><div class="brand" id="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte · CNB<small>Menu</small></span></div><div class="lang" style="margin-left:auto"><button type="button" data-l="pt" class="on">PT</button><button type="button" data-l="en">EN</button></div></header>
 <section class="view wrap">
-  <div id="sem-mesa" class="empty" hidden>Leia o QR da sua mesa para abrir o menu.<br><span class="muted" style="font-size:13px">Scan the QR code on your table to open the menu.</span></div>
+  <div id="sem-mesa" class="empty welcome" hidden><picture><source srcset="img/requinte-claro.webp" media="(prefers-color-scheme: dark)"><img class="logo-req" src="img/requinte.webp" alt="Requinte Wine Restaurante" width="480" height="279"></picture><img class="logo-cnb" src="img/cnb.webp" alt="Clube Náutico da Beira" width="240" height="240"><p id="sem-mesa-msg">Leia o QR da sua mesa para abrir o menu.<br><span class="muted" style="font-size:13px">Scan the QR code on your table to open the menu.</span></p></div>
   <div id="app" hidden>
-    <div class="c-head"><div><h1 id="c-nome">Requinte Wine Restaurante</h1><div class="mesa"><span id="c-clube"></span> · <span id="c-mesa-lbl">Mesa —</span></div><div class="wifi" id="c-wifi"></div></div><button class="btn sm ghost" id="c-myorders" type="button"><span data-t="meus">Os meus pedidos</span> <span class="badge" id="c-ord-badge" hidden>0</span></button></div>
+    <div class="c-head"><div><h1 class="logo-h1"><picture><source srcset="img/requinte-claro.webp" media="(prefers-color-scheme: dark)"><img class="logo-req" src="img/requinte.webp" alt="Requinte Wine Restaurante" width="480" height="279" fetchpriority="high"></picture><span id="c-nome" class="sr-only">Requinte Wine Restaurante</span></h1><div class="mesa"><span id="c-clube"></span> · <span id="c-mesa-lbl">Mesa —</span></div><div class="wifi" id="c-wifi"></div></div><div class="c-side"><img class="logo-cnb" src="img/cnb.webp" alt="Clube Náutico da Beira" width="240" height="240"><button class="btn sm ghost" id="c-myorders" type="button"><span data-t="meus">Os meus pedidos</span> <span class="badge" id="c-ord-badge" hidden>0</span></button></div></div>
     <p class="muted" id="c-boas" style="margin:0 0 10px"></p>
     <div class="hl" id="c-hl"></div>
     <div class="cats" id="c-cats"></div>
@@ -39,7 +41,7 @@
   try { visita = JSON.parse(localStorage.getItem('cnb-visita-' + code) || 'null'); } catch (e) {}
   // menu com cache local de 10 min (poupa dados móveis)
   try { const c = JSON.parse(localStorage.getItem('cnb-menu') || 'null'); if (c && Date.now() - c.t < 600000) M = c.m; } catch (e) {}
-  try { mesa = await api('mesaPorCodigo', code); } catch (e) { document.getElementById('sem-mesa').hidden = false; document.getElementById('sem-mesa').textContent = e.message; return; }
+  try { mesa = await api('mesaPorCodigo', code); } catch (e) { document.getElementById('sem-mesa').hidden = false; document.getElementById('sem-mesa-msg').textContent = e.message; return; }
   if (!visita || Date.now() - visita.t > 3 * 3600000) { visita = { id: 'V' + Date.now().toString(36), t: Date.now() }; try { localStorage.setItem('cnb-visita-' + code, JSON.stringify(visita)); } catch (e) {} }
   if (!M) { M = await api('menuPublico'); try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }
   else api('menuPublico').then(m => { M = m; try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }).catch(() => {});
