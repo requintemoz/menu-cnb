@@ -24,9 +24,11 @@
         <div class="card staff" style="margin-top:12px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 class="section-title">Em turno</h2><button class="btn sm" id="b-shift" type="button">Entrar / sair de turno</button></div><table><thead><tr><th>Nome</th><th>Entrada</th><th>Mesas</th><th>Pendentes</th></tr></thead><tbody id="b-staff"></tbody></table></div>
       </div>
       <div class="b-lists">
+        <div class="b-list sup" id="b-sup-wrap" hidden><h3>Supervisor(a) chamado(a) <span class="pill crit" id="b-n-sup">0</span></h3><div class="list" id="b-sup"></div></div>
         <div class="b-list"><h3>Pedidos por registar <span class="pill grey" id="b-n-ped">0</span></h3><div class="list" id="b-ped"></div></div>
         <div class="b-list"><h3>Chamadas por atender <span class="pill grey" id="b-n-ch">0</span></h3><div class="list" id="b-ch"></div></div>
         <div class="b-list"><h3>Contas pedidas <span class="pill grey" id="b-n-ct">0</span></h3><div class="list" id="b-ct"></div></div>
+        <div class="b-list" id="b-fid-box" hidden><h3>Cartão Requinte</h3><div class="row" style="gap:6px"><input id="b-fid-q" placeholder="Celular ou nome do cliente" style="flex:1;min-width:0" inputmode="search"><button class="btn sm" id="b-fid-go" type="button">Procurar</button></div><div class="list" id="b-fid-r" style="margin-top:8px"></div></div>
       </div>
     </div>
     <div class="card rep" style="margin-top:14px"><h2 class="section-title">Tempos por garçom · hoje</h2><p class="muted" style="margin:0 0 8px;font-size:13px">Mediana e máximo em minutos. Entre parênteses, acima do limite.</p><table><thead><tr><th>Garçom</th><th>Pedidos</th><th>t2−t0 med</th><th>t2−t0 máx</th><th>Chamadas</th><th>c1−c0 med</th><th>Sem NFC</th><th>De colegas</th><th>Sugestões</th><th>Horas</th></tr></thead><tbody id="b-rep"></tbody></table></div>
@@ -35,8 +37,8 @@
 <div id="sheet-root"></div><div id="toast-root"></div>
 <script>
 (function () {
-  const { api, toast, openSheet, closeSheet, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
-  let S = null, token = null, user = null, sel = new Set(), foraAntes = 0, chVistas = null; const off = offlineBar(); armarSom();
+  const { api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
+  let S = null, token = null, user = null, sel = new Set(), foraAntes = 0, chVistas = null, supVistas = null; const off = offlineBar(); armarSom();
   setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
   function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('b-who').textContent = user.nome; load(); setInterval(load, CNB.POLL_STAFF_MS); }
   const saved = sess.get(); if (saved) start(saved); else loginUI(['caixa', 'supervisor', 'gerente'], start);
@@ -60,6 +62,15 @@
       else if (novasCh.length) beep(2);
     }
     chVistas = new Set(S.chamadas.map(c => c.id));
+    // cliente pediu o(a) supervisor(a): toque grave e aviso longo
+    const F = S.fid || { supervisor: [], contas: {} }; const sups = F.supervisor || []; document.getElementById('b-fid-box').hidden = !S.fid;
+    if (supVistas) { const novas = sups.filter(x => !supVistas.has(x.id)); if (novas.length) { beep(6, 520); toast('⚠ Mesa ' + novas.map(x => esc(x.mesa)).join(', ') + ' pede o(a) supervisor(a)', 9000); } }
+    supVistas = new Set(sups.map(x => x.id));
+    document.getElementById('b-sup-wrap').hidden = !sups.length; document.getElementById('b-n-sup').textContent = sups.length;
+    const bs = document.getElementById('b-sup');
+    bs.innerHTML = sups.map(x => `<div class="wi crit supv"><span class="mesa">${esc(x.mesa)}</span><span><b>${x.texto ? '“' + esc(x.texto) + '”' : 'O cliente quer falar com o(a) supervisor(a)'}</b><br><span class="sub">${x.cliente ? 'Cartão Requinte: ' + esc(x.cliente) + ' · ' : ''}${x.aceite ? 'a caminho: ' + esc(x.porNome || nome(x.por)) : 'ainda ninguém foi à mesa'}</span></span><span style="text-align:right"><span class="t num">${Math.round(mins(x.c0))} min</span><br>${x.aceite ? `<button class="btn sm primary" type="button" data-supok="${esc(x.id)}">Resolvido</button>` : `<button class="btn sm primary" type="button" data-supvou="${esc(x.id)}">Vou lá</button>`}</span></div>`).join('');
+    bs.querySelectorAll('[data-supvou]').forEach(b => b.addEventListener('click', async () => { try { await api('fidSupAceitar', token, b.dataset.supvou); load(); } catch (e) { toast(e.message); } }));
+    bs.querySelectorAll('[data-supok]').forEach(b => b.addEventListener('click', () => supResolver(b.dataset.supok)));
     const med = S.relatorio.totais.t2t0_med;
     document.getElementById('b-kpis').innerHTML = `<div class="kpi ${semG ? 'crit' : ''}"><b class="num">${semG}</b><small>mesas sem garçom</small></div><div class="kpi"><b class="num">${garcons.length}</b><small>garçons em turno</small></div><div class="kpi"><b class="num">${ped.length + S.chamadas.length}</b><small>pendentes</small></div><div class="kpi ${fora ? 'crit' : ''}"><b class="num">${fora}</b><small>fora do limite</small></div><div class="kpi"><b class="num">${med == null ? '—' : med.toFixed(1)}</b><small>min pedido → registo (med)</small></div>`;
     document.getElementById('b-staff').innerHTML = S.emTurno.map(t => { const ms = S.mesas.filter(m => m.garcom === t.id).length; const pend = S.pedidos.filter(p => (p.g1 ? p.g1 === t.id : atrib[p.mesa] === t.id)).length + S.chamadas.filter(c => (c.g ? c.g === t.id : atrib[c.mesa] === t.id)).length; return `<tr><td><b>${esc(t.nome)}</b> <span class="muted">${t.perfil}</span></td><td class="num">${hhmm(t.entrada)}</td><td class="num">${ms}</td><td class="num">${pend}</td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Ninguém em turno.</td></tr>';
@@ -68,11 +79,31 @@
     bp.querySelectorAll('[data-cx]').forEach(b => b.addEventListener('click', async () => { try { await api('bVouRegistar', token, b.dataset.cx); toast('Saiu da lista do garçom. Lance no Loyverse e transfira o ticket para o garçom da mesa.', 4000); load(); } catch (e) { toast(e.message); } }));
     bp.querySelectorAll('[data-regcx]').forEach(b => b.addEventListener('click', async () => { try { await api('bRegistadoCaixa', token, b.dataset.regcx); toast('Registado pelo caixa.'); load(); } catch (e) { toast(e.message); } }));
     document.getElementById('b-ch').innerHTML = chs.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => line(c.mesa, c.c0, esc(c.motivo), c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa])), L.chamada)).join('') || '<div class="empty">Nenhuma chamada</div>';
-    document.getElementById('b-ct').innerHTML = cts.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => line(c.mesa, c.c0, 'Conta', c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa])), L.chamada)).join('') || '<div class="empty">Nenhuma conta pedida</div>';
+    const bct = document.getElementById('b-ct');
+    bct.innerHTML = cts.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => { const f = F.contas && F.contas[c.id]; const fid = f ? `<span class="fid">Cartão Requinte: ${esc(f.nome)} · ${fmt(f.total)}${f.disponiveis.length ? ' · brinde: ' + f.disponiveis.map(d => esc(d.brinde)).join(', ') : ''}</span>` : ''; const bt = f ? f.disponiveis.map(d => `<button class="btn sm primary" type="button" data-cli="${esc(f.id)}" data-chave="${esc(d.chave)}" data-brinde="${esc(d.brinde)}" data-nome="${esc(f.nome)}" data-mesa="${esc(c.mesa)}">Entregar brinde</button>`).join('<br>') : ''; return line(c.mesa, c.c0, 'Conta', (c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa]))) + fid, L.chamada, bt); }).join('') || '<div class="empty">Nenhuma conta pedida</div>';
+    bct.querySelectorAll('[data-chave]').forEach(b => b.addEventListener('click', () => entregar(b.dataset)));
     document.getElementById('b-n-ped').textContent = ped.length; document.getElementById('b-n-ch').textContent = chs.length; document.getElementById('b-n-ct').textContent = cts.length;
     const f = v => v == null ? '—' : Number(v).toFixed(1);
     document.getElementById('b-rep').innerHTML = S.relatorio.linhas.filter(l => l.pedidos || l.chamadas || S.emTurno.some(t => t.id === l.id)).map(l => `<tr><td><b>${esc(l.nome)}</b></td><td class="num">${l.pedidos}${l.t2t0_fora ? ` <span class="pill crit">${l.t2t0_fora}</span>` : ''}</td><td class="num">${f(l.t2t0_med)}</td><td class="num">${f(l.t2t0_max)}</td><td class="num">${l.chamadas}${l.c1c0_fora ? ` <span class="pill crit">${l.c1c0_fora}</span>` : ''}</td><td class="num">${f(l.c1c0_med)}</td><td class="num">${l.semNfc}</td><td class="num">${l.deColegas}</td><td class="num">${l.sugMostradas ? l.sugAceites + '/' + l.sugMostradas : '—'}</td><td class="num">${l.horas}</td></tr>`).join('') || '<tr><td colspan="10" class="muted">Sem dados ainda.</td></tr>';
   }
+  function supResolver(id) {
+    const x = ((S.fid || {}).supervisor || []).find(s => s.id === id); if (!x) return;
+    openSheet(`<h3>Mesa ${esc(x.mesa)} · supervisor(a)</h3>${x.texto ? `<p>“${esc(x.texto)}”</p>` : ''}<label class="eyebrow" for="sup-res">O que foi feito</label><textarea id="sup-res" rows="3" style="width:100%;margin-top:4px" placeholder="ex.: prato refeito, sobremesa oferecida"></textarea><div class="actions"><button class="btn primary" id="sup-ok" type="button">Marcar como resolvido</button></div>`, r => r.querySelector('#sup-ok').addEventListener('click', async () => { try { await api('fidSupResolver', token, id, r.querySelector('#sup-res').value); closeSheet(); toast('Registado.'); load(); } catch (e) { toast(e.message); } }));
+  }
+  function entregar(d) {
+    openSheet(`<h3>Entregar brinde</h3><p><b>${esc(d.brinde)}</b><br><span class="muted">a ${esc(d.nome)}${d.mesa ? ' · mesa ' + esc(d.mesa) : ''}</span></p><p class="muted" style="font-size:13px">Lance o brinde no Loyverse como oferta (desconto de 100%) e confirme aqui. Fica registado e sai do cartão do cliente.</p><div class="actions"><button class="btn primary" id="br-ok" type="button">Confirmar entrega</button><button class="btn ghost" id="br-x" type="button">Cancelar</button></div>`, r => {
+      r.querySelector('#br-x').addEventListener('click', closeSheet);
+      r.querySelector('#br-ok').addEventListener('click', async () => { try { const res = await api('fidEntregarBrinde', token, d.cli, d.chave, d.mesa || ''); closeSheet(); toast('Brinde entregue: ' + esc(res.brinde)); load(); procurar(); } catch (e) { toast(e.message); } });
+    });
+  }
+  async function procurar() {
+    const q = document.getElementById('b-fid-q').value.trim(); const out = document.getElementById('b-fid-r'); if (!q) { out.innerHTML = ''; return; }
+    try { const rs = await api('fidProcurar', token, q);
+      out.innerHTML = rs.length ? rs.map(c => `<div class="wi ok"><span class="mesa">${c.disponiveis.length ? '★' : ''}</span><span><b>${esc(c.nome)}</b><br><span class="sub">${esc(c.celular)} · ${fmt(c.total)} · ${c.visitas} visita(s)${c.proximo ? ' · faltam ' + fmt(c.proximo.falta) + ' para ' + esc(c.proximo.brinde) : ''}</span>${c.disponiveis.length ? `<span class="fid">Por levantar: ${c.disponiveis.map(d => esc(d.brinde)).join(', ')}</span>` : ''}</span><span style="text-align:right">${c.disponiveis.map(d => `<button class="btn sm primary" type="button" data-cli="${esc(c.id)}" data-chave="${esc(d.chave)}" data-brinde="${esc(d.brinde)}" data-nome="${esc(c.nome)}">Entregar</button>`).join('<br>')}</span></div>`).join('') : '<div class="empty">Nenhum cliente encontrado</div>';
+      out.querySelectorAll('[data-chave]').forEach(b => b.addEventListener('click', () => entregar(b.dataset)));
+    } catch (e) { out.innerHTML = `<div class="empty">${esc(/não permitida/i.test(e.message) ? 'O Cartão Requinte ainda não está activo no servidor.' : e.message)}</div>`; }
+  }
+  document.getElementById('b-fid-go').addEventListener('click', procurar); document.getElementById('b-fid-q').addEventListener('keydown', e => { if (e.key === 'Enter') procurar(); });
   function selbar() { document.getElementById('b-selbar').hidden = !sel.size; document.getElementById('b-seln').textContent = sel.size + ' seleccionada(s)'; }
   document.getElementById('b-selgo').addEventListener('click', () => atribuir([...sel])); document.getElementById('b-selx').addEventListener('click', () => { sel = new Set(); selbar(); load(); });
   function atribuir(mesas) {
