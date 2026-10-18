@@ -30,6 +30,11 @@
 <symbol id="i-espumante" viewBox="0 0 24 24"><path d="M10.2 3h3.6c.5 5.2.2 9.4-1.8 9.4s-2.3-4.2-1.8-9.4Z"/><path d="M12 12.4V19M9.5 21h5"/><circle cx="12" cy="6" r=".5" fill="currentColor" stroke="none"/><circle cx="11.2" cy="8.6" r=".5" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-garrafa" viewBox="0 0 24 24"><path d="M10.2 2.8h3.6v4.4c2 1 2.8 2.6 2.8 5V21.2H7.4V12.2c0-2.4.8-4 2.8-5Z"/><path d="M7.4 14.5h9.2"/></symbol>
 <symbol id="i-tumbler" viewBox="0 0 24 24"><path d="M6 4h12l-1.2 17H7.2Z"/><path d="M7 13h10"/></symbol>
+<symbol id="i-presente" viewBox="0 0 24 24"><path d="M4 11h16v10H4Z"/><path d="M3 7.5h18V11H3Z"/><path d="M12 7.5V21"/><path d="M12 7.5C10.5 4 7 3.6 7 5.6c0 1.6 2.4 1.9 5 1.9ZM12 7.5c1.5-3.5 5-3.9 5-1.9 0 1.6-2.4 1.9-5 1.9Z"/></symbol>
+<symbol id="i-estrela" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6L12 16.7 6.6 19.6l1.1-6L3.2 9.4l6.1-.8Z"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".9" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m7.8 12.3 2.8 2.8 5.6-5.8"/></symbol>
+<symbol id="i-pessoa" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c.8-4 3.8-6.2 7.5-6.2s6.7 2.2 7.5 6.2"/></symbol>
 </svg>
 <header class="top wrap"><div class="brand" id="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte · CNB<small>Menu</small></span></div><div class="lang" style="margin-left:auto"><button type="button" data-l="pt" class="on">PT</button><button type="button" data-l="en">EN</button></div></header>
 <section class="view wrap">
@@ -38,6 +43,7 @@
     <div class="c-head"><div><h1 class="logo-h1"><picture><source srcset="img/requinte-claro.webp" media="(prefers-color-scheme: dark)"><img class="logo-req" src="img/requinte.webp" alt="Requinte Wine Restaurante" width="480" height="279" fetchpriority="high"></picture><span id="c-nome" class="sr-only">Requinte Wine Restaurante</span></h1><div class="mesa"><span id="c-clube"></span> · <span id="c-mesa-lbl">Mesa —</span></div><div class="wifi" id="c-wifi"></div></div><div class="c-side"><img class="logo-cnb" src="img/cnb.webp" alt="Clube Náutico da Beira" width="240" height="240"><button class="btn sm ghost" id="c-myorders" type="button"><span data-t="meus">Os meus pedidos</span> <span class="badge" id="c-ord-badge" hidden>0</span></button></div></div>
     <p class="muted" id="c-boas" style="margin:0 0 10px"></p>
     <div class="hl" id="c-hl"></div>
+    <div id="c-fid"></div>
     <div class="cats" id="c-cats"></div>
     <input id="c-search" placeholder="Procurar no menu…" style="width:100%;margin:4px 0 8px" aria-label="Procurar">
     <div id="c-menu"></div>
@@ -50,8 +56,20 @@
 <script>
 (async function () {
   const { api, toast, openSheet, closeSheet, fmt, hhmm, mins, esc } = U;
-  const T = { pt: { meus: 'Os meus pedidos', chamar: 'Chamar garçom', carrinho: 'Pedido da mesa', ver: 'Ver pedido', add: 'Adicionar', combina: 'Combina com', nota: 'Nota para a cozinha', notaEx: 'ex.: sem cebola, bem passado', tam: 'Tamanho', extras: 'Extras', confirmar: 'Confirmar pedido', total: 'Total', bebida: 'Alguma bebida para acompanhar?', sobremesa: 'Uma sobremesa ou um café para fechar?', depois: 'Depois de confirmar, para alterar chame o garçom. A conta paga-se no fim.', motivo: 'Diga-nos o motivo para o garçom vir preparado.', conta: 'Pedir a conta', pessoas: 'Para quantas pessoas quer dividir? (opcional)', enviado: 'Pedido enviado. O garçom já o recebe.', chamado: 'O seu garçom já vem.', contaPedida: 'Conta pedida. O garçom traz já.', jaChamou: 'Já chamou há {m} min. O garçom já vem.', estados: ['Enviado', 'Recebido', 'Em preparação', 'Entregue'], chamada: 'Garçom chamado', contaTit: 'Conta pedida', avez: 'A avisar', vem: 'Já vem', indisp: 'esgotado', remover: 'remover', sug: '★ Sugestão da casa', procurar: 'Procurar no menu…' },
-    en: { meus: 'My orders', chamar: 'Call waiter', carrinho: 'Table order', ver: 'View order', add: 'Add', combina: 'Goes well with', nota: 'Note for the kitchen', notaEx: 'e.g. no onion, well done', tam: 'Size', extras: 'Extras', confirmar: 'Confirm order', total: 'Total', bebida: 'Something to drink with it?', sobremesa: 'A dessert or a coffee to finish?', depois: 'After confirming, call the waiter to change anything. You pay at the end.', motivo: 'Tell us why so the waiter comes prepared.', conta: 'Ask for the bill', pessoas: 'Split between how many? (optional)', enviado: 'Order sent. Your waiter has it.', chamado: 'Your waiter is on the way.', contaPedida: 'Bill requested. Coming right up.', jaChamou: 'You called {m} min ago. The waiter is coming.', estados: ['Sent', 'Received', 'Being prepared', 'Delivered'], chamada: 'Waiter called', contaTit: 'Bill requested', avez: 'Notifying', vem: 'On the way', indisp: 'sold out', remover: 'remove', sug: '★ House favourite', procurar: 'Search the menu…' } };
+  const T = { pt: { meus: 'Os meus pedidos', chamar: 'Chamar garçom', carrinho: 'Pedido da mesa', ver: 'Ver pedido', add: 'Adicionar', combina: 'Combina com', nota: 'Nota para a cozinha', notaEx: 'ex.: sem cebola, bem passado', tam: 'Tamanho', extras: 'Extras', confirmar: 'Confirmar pedido', total: 'Total', bebida: 'Alguma bebida para acompanhar?', sobremesa: 'Uma sobremesa ou um café para fechar?', depois: 'Depois de confirmar, para alterar chame o garçom. A conta paga-se no fim.', motivo: 'Diga-nos o motivo para o garçom vir preparado.', conta: 'Pedir a conta', pessoas: 'Para quantas pessoas quer dividir? (opcional)', enviado: 'Pedido enviado. O garçom já o recebe.', chamado: 'O seu garçom já vem.', contaPedida: 'Conta pedida. O garçom traz já.', jaChamou: 'Já chamou há {m} min. O garçom já vem.', estados: ['Enviado', 'Recebido', 'Em preparação', 'Entregue'], chamada: 'Garçom chamado', contaTit: 'Conta pedida', avez: 'A avisar', vem: 'Já vem', indisp: 'esgotado', remover: 'remover', sug: '★ Sugestão da casa', procurar: 'Procurar no menu…',
+      cartao: 'Cartão Requinte', fidConvite: 'Registe-se e ganhe brindes a cada visita.', fidVer: 'Ver o meu cartão', ola: 'Olá, {n}', acumulado: 'Acumulado', visitasL: 'Visitas', faltam: 'Faltam {v} para: {b}', temBrinde: 'Tem um brinde à sua espera', mostre: 'Mostre este ecrã ao caixa para o levantar.', comoGanha: 'Como ganha brindes', comoConta: 'Contam os pedidos feitos por esta app e registados pelo garçom.', sair: 'Não é você? Sair deste telemóvel', saiu: 'Cartão retirado deste telemóvel.',
+      regIntro: 'Registe-se e ganhe brindes. Cada pedido feito por aqui soma no seu cartão.', nomeL: 'Nome', celL: 'Celular', emailL: 'Email (opcional)', aceitaL: 'Aceito receber ofertas e novidades do Requinte por WhatsApp.', priv: 'Os seus dados ficam só com o Requinte e servem para o seu cartão. Pode pedir para os apagar quando quiser.', registar: 'Registar', bemVindo: 'Bem-vindo ao Cartão Requinte, {n}!', aCarregar: 'A carregar…', indispFid: 'O Cartão Requinte estará disponível dentro de momentos.',
+      obrigado: 'Obrigado pela preferência!', contaCaminho: 'A conta já foi pedida. O garçom traz já.', esta: 'Esta visita ficou registada no seu cartão.', convite: 'Ainda não tem o Cartão Requinte? Registe-se em 20 segundos e esta visita já conta.',
+      comoAt: 'Como foi o atendimento?', comoAtDe: 'Como foi o atendimento de {g}?', estrelasL: 'Classificação de 1 a 5 estrelas', comida: 'A comida e as bebidas estavam ao seu gosto?', comidaOp: ['Sim, muito', 'Razoável', 'Não'], espera: 'O tempo de espera foi…', esperaOp: ['Rápido', 'Aceitável', 'Demorado'], coment: 'Quer deixar um comentário? (opcional)', enviarAv: 'Enviar avaliação', avObrigado: 'Obrigado pela sua avaliação!',
+      supQ: 'Algo não correu bem?', supTxt: 'Chame o(a) supervisor(a) de serviço, que vem falar consigo à mesa.', supBtn: 'Chamar o(a) supervisor(a)', supMotivo: 'Quer adiantar o motivo? (opcional)', supEnviar: 'Chamar agora', supChamado: 'O(a) supervisor(a) de serviço vem falar consigo.', supTit: 'Supervisor(a) chamado(a)', supVem: 'A caminho', supResolvido: 'Atendido',
+      google: 'Avalie-nos no Google', googleSub: 'A sua opinião ajuda-nos muito. Não se esqueça de juntar fotografias da sua visita.', insta: 'Siga-nos no Instagram', avaliar: 'Avaliar', verMais: 'Abrir', avaliarConvite: 'Diga-nos como correu a sua visita.' },
+    en: { meus: 'My orders', chamar: 'Call waiter', carrinho: 'Table order', ver: 'View order', add: 'Add', combina: 'Goes well with', nota: 'Note for the kitchen', notaEx: 'e.g. no onion, well done', tam: 'Size', extras: 'Extras', confirmar: 'Confirm order', total: 'Total', bebida: 'Something to drink with it?', sobremesa: 'A dessert or a coffee to finish?', depois: 'After confirming, call the waiter to change anything. You pay at the end.', motivo: 'Tell us why so the waiter comes prepared.', conta: 'Ask for the bill', pessoas: 'Split between how many? (optional)', enviado: 'Order sent. Your waiter has it.', chamado: 'Your waiter is on the way.', contaPedida: 'Bill requested. Coming right up.', jaChamou: 'You called {m} min ago. The waiter is coming.', estados: ['Sent', 'Received', 'Being prepared', 'Delivered'], chamada: 'Waiter called', contaTit: 'Bill requested', avez: 'Notifying', vem: 'On the way', indisp: 'sold out', remover: 'remove', sug: '★ House favourite', procurar: 'Search the menu…',
+      cartao: 'Requinte Card', fidConvite: 'Sign up and earn treats on every visit.', fidVer: 'See my card', ola: 'Hello, {n}', acumulado: 'Total so far', visitasL: 'Visits', faltam: '{v} to go for: {b}', temBrinde: 'A treat is waiting for you', mostre: 'Show this screen at the till to collect it.', comoGanha: 'How you earn treats', comoConta: 'Orders placed through this app and registered by the waiter count.', sair: 'Not you? Remove from this phone', saiu: 'Card removed from this phone.',
+      regIntro: 'Sign up and earn treats. Every order placed here adds to your card.', nomeL: 'Name', celL: 'Mobile number', emailL: 'Email (optional)', aceitaL: 'I agree to receive offers and news from Requinte on WhatsApp.', priv: 'Your details stay with Requinte and are used for your card only. You can ask us to delete them at any time.', registar: 'Sign up', bemVindo: 'Welcome to the Requinte Card, {n}!', aCarregar: 'Loading…', indispFid: 'The Requinte Card will be available shortly.',
+      obrigado: 'Thank you for choosing us!', contaCaminho: 'Your bill is on its way.', esta: 'This visit has been added to your card.', convite: 'No Requinte Card yet? Sign up in 20 seconds and this visit counts.',
+      comoAt: 'How was the service?', comoAtDe: 'How was the service from {g}?', estrelasL: 'Rating from 1 to 5 stars', comida: 'Did you enjoy the food and drinks?', comidaOp: ['Yes, very much', 'It was OK', 'No'], espera: 'The waiting time was…', esperaOp: ['Quick', 'Acceptable', 'Too long'], coment: 'Any comments? (optional)', enviarAv: 'Send rating', avObrigado: 'Thank you for your feedback!',
+      supQ: 'Something not right?', supTxt: 'Call the duty supervisor, who will come and talk to you at your table.', supBtn: 'Call the supervisor', supMotivo: 'Would you like to tell us why? (optional)', supEnviar: 'Call now', supChamado: 'The duty supervisor is coming to see you.', supTit: 'Supervisor called', supVem: 'On the way', supResolvido: 'Attended',
+      google: 'Review us on Google', googleSub: 'Your opinion helps us a lot. Remember to add photos of your visit.', insta: 'Follow us on Instagram', avaliar: 'Rate', verMais: 'Open', avaliarConvite: 'Tell us how your visit went.' } };
   let L = 'pt'; const t = k => T[L][k];
   const code = new URLSearchParams(location.search).get('m');
   if (!code) { document.getElementById('sem-mesa').hidden = false; return; }
@@ -100,7 +118,7 @@
     document.querySelectorAll('#c-hl button').forEach(b => b.addEventListener('click', () => itemSheet(b.dataset.item)));
     const cats = document.getElementById('c-cats'); cats.innerHTML = M.menu.map(c => `<button type="button" data-cat="${esc(c.nome)}">${esc(c.nome)}</button>`).join('');
     cats.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { const g = document.querySelector(`[data-grp="${CSS.escape(b.dataset.cat)}"]`); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); cats.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }));
-    renderMenu(''); renderOrders(); cartBar();
+    renderMenu(''); renderOrders(); cartBar(); fidFaixa();
   }
   function renderMenu(q) {
     q = (q || '').toLowerCase();
@@ -153,12 +171,13 @@
       r.querySelector('#cl-confirm').addEventListener('click', async () => {
         r.querySelector('#cl-confirm').disabled = true;
         if (lemb) lemb.itens.forEach(x => { sugs.push({ tipo: lemb.tipo, origem: '', item: x, aceite: extras.has(x) }); if (extras.has(x) && byId[x]) carrinho.push({ item: x, nome: byId[x].nome, cat: byId[x].catNome, qtd: 1, preco: byId[x].preco, variante: '', mods: [], nota: '' }); });
-        try { await api('enviarPedido', code, visita.id, carrinho, sugs); carrinho = []; sugs = []; closeSheet(); cartBar(); toast(t('enviado')); poll(); } catch (e) { toast(e.message); r.querySelector('#cl-confirm').disabled = false; }
+        try { await api('enviarPedido', code, visita.id, carrinho, sugs, cli ? cli.token : ''); carrinho = []; sugs = []; closeSheet(); cartBar(); toast(t('enviado')); poll(); } catch (e) { toast(e.message); r.querySelector('#cl-confirm').disabled = false; }
       });
     });
   }
   document.getElementById('c-call').addEventListener('click', () => {
     openSheet(`<h3>${t('chamar')} · ${esc(mesa.nome)}</h3><p class="muted" style="margin:0 0 10px">${t('motivo')}</p><div class="opts">${M.motivos.map(m => `<button type="button" class="opt" data-m="${esc(m)}"><span>${esc(m)}</span></button>`).join('')}<button type="button" class="opt" data-m="Conta"><span><b>${t('conta')}</b></span></button></div><label class="eyebrow">${t('pessoas')}</label><input id="ch-p" inputmode="numeric" style="width:100%;margin-top:4px">`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', async () => {
+      if (b.dataset.m === 'Conta' && M.fid) { pedirConta(r.querySelector('#ch-p').value); return; }
       try { const res = await api('chamarGarcom', code, b.dataset.m, r.querySelector('#ch-p').value); closeSheet(); if (res.repetida) { const c = estado.chamadas.find(x => x.id === res.id); toast(t('jaChamou').replace('{m}', c ? Math.round(mins(c.c0)) : '1')); } else toast(b.dataset.m === 'Conta' ? t('contaPedida') : t('chamado')); poll(); } catch (e) { toast(e.message); }
     })));
   });
@@ -167,11 +186,128 @@
     const el = document.getElementById('c-orders'); const ps = estado.pedidos, cs = estado.chamadas;
     document.getElementById('c-ord-badge').hidden = !ps.length; document.getElementById('c-ord-badge').textContent = ps.length;
     const nivelP = p => p.t3 ? 4 : p.t2 ? 3 : p.t1 ? 2 : 1;
-    el.innerHTML = (ps.length || cs.length ? `<h2 class="section-title">${t('meus')}</h2>` : '') +
+    const sup = estado.supervisor, contaJa = !!M.fid && (visita.conta || cs.some(c => c.motivo === 'Conta'));
+    el.innerHTML = (ps.length || cs.length || sup || contaJa ? `<h2 class="section-title">${t('meus')}</h2>` : '') +
+      (contaJa ? `<div class="ord obg-mini"><div><b>${t('obrigado')}</b><br><small class="muted">${estado.avaliada || avEnviada ? t('avObrigado') : t('avaliarConvite')}</small></div><button class="btn sm ${estado.avaliada || avEnviada ? '' : 'primary'}" type="button" id="c-obg">${estado.avaliada || avEnviada ? t('verMais') : t('avaliar')}</button></div>` : '') +
+      (sup ? `<div class="ord"><div><b>${t('supTit')}</b><br><small class="muted">${hhmm(sup.c0)}</small></div><span class="pill ${sup.c1 ? 'ok' : 'sea'}">${sup.c1 ? t('supResolvido') : sup.aceite ? t('supVem') : t('avez')}</span></div>` : '') +
       cs.map(c => `<div class="ord"><div><b>${c.motivo === 'Conta' ? t('contaTit') : t('chamada')}</b><br><small class="muted">${esc(c.motivo)} · ${hhmm(c.c0)}</small></div><span class="pill sea">${c.aceite ? t('vem') : t('avez')} · ${Math.round(mins(c.c0))} min</span></div>`).join('') +
       ps.map(p => { const n = nivelP(p); return `<div class="ord"><div><b>${p.linhas.map(l => l.qtd + '× ' + esc(l.nome) + (l.indisponivel ? ` <span class="pill crit">${t('indisp')}</span>` : '')).join(', ')}</b><br><small class="muted">${hhmm(p.t0)} · ${fmt(p.total)}</small></div><div style="text-align:right"><span class="pill ${n === 4 ? 'ok' : 'sea'}">${t('estados')[n - 1]}</span><div class="steps" style="margin-top:6px">${[1, 2, 3, 4].map(k => `<i class="${k <= n ? 'on' : ''}"></i>`).join('')}</div></div></div>`; }).join('');
+    const ob = document.getElementById('c-obg'); if (ob) ob.addEventListener('click', obrigadoSheet);
   }
-  async function poll() { try { estado = await api('estadoMesaCliente', code, visita.id); renderOrders(); } catch (e) {} }
+
+  // ---------- Cartão Requinte, agradecimento, avaliação e supervisor(a) ----------
+  let cli = null; try { cli = JSON.parse(localStorage.getItem('cnb-cliente') || 'null'); } catch (e) {}
+  const guardaCli = c => { cli = c; try { if (c) localStorage.setItem('cnb-cliente', JSON.stringify(c)); else localStorage.removeItem('cnb-cliente'); } catch (e) {} fidFaixa(); };
+  const guardaVisita = () => { try { localStorage.setItem('cnb-visita-' + code, JSON.stringify(visita)); } catch (e) {} };
+  const FID = () => M.fid || {};
+  const ic = n => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+  const semFid = e => /não permitida|nao permitida/i.test(e.message);
+  const instaNome = u => { const m = String(u).match(/instagram\.com\/([\w.]+)/); return m ? '@' + m[1] : 'Instagram'; };
+  let contaInfo = null, avEnviada = false, supKey = 'null'; const av = { estrelas: 0, comida: '', espera: '' };
+  function fidFaixa() {
+    const el = document.getElementById('c-fid'); if (!el) return; if (!M.fid) { el.innerHTML = ''; return; } // servidor ainda sem o Cartão Requinte
+    el.innerHTML = `<button type="button" class="fid-faixa" id="c-fid-btn">${ic('presente')}<span><b>${t('cartao')}</b><small>${cli ? esc(t('ola').replace('{n}', cli.nome)) + ' · ' + t('fidVer') : t('fidConvite')}</small></span><span class="seta" aria-hidden="true">›</span></button>`;
+    document.getElementById('c-fid-btn').addEventListener('click', () => cartaoSheet());
+  }
+  const escaloesHtml = es => es && es.length ? `<div class="escaloes"><span class="eyebrow">${t('comoGanha')}</span>${es.map(e => `<div><b class="num">${fmt(e.limiar)}</b><span>${esc(e.brinde)}</span></div>`).join('')}</div>` : '';
+  function cartaoHtml(c, mini) {
+    const pct = c.ciclo ? Math.min(100, Math.round(c.noCiclo / c.ciclo * 100)) : 0;
+    const marcas = (c.escaloes || []).slice(0, -1).map(e => `<i style="left:${Math.round(e.limiar / c.ciclo * 100)}%"></i>`).join('');
+    return `<div class="cartao${mini ? ' mini' : ''}"><div class="cartao-top"><span>${t('cartao')}${mini ? ' · ' + esc(c.nome) : ''}</span><img src="img/monograma-claro.webp" alt="" width="71" height="48"></div>
+      ${mini ? '' : `<b class="cartao-nome">${esc(t('ola').replace('{n}', c.nome))}</b>`}
+      <div class="cartao-num"><span><small>${t('acumulado')}</small><b class="num">${fmt(c.total)}</b></span><span><small>${t('visitasL')}</small><b class="num">${c.visitas}</b></span></div>
+      <div class="barra" role="progressbar" aria-valuemin="0" aria-valuemax="${c.ciclo}" aria-valuenow="${c.noCiclo}">${marcas}<span style="width:${pct}%"></span></div>
+      ${c.proximo ? `<small class="cartao-falta">${esc(t('faltam').replace('{v}', fmt(c.proximo.falta)).replace('{b}', c.proximo.brinde))}</small>` : ''}</div>
+      ${c.disponiveis && c.disponiveis.length ? `<div class="voucher">${ic('presente')}<div><b>${t('temBrinde')}</b>${c.disponiveis.map(d => `<span>${esc(d.brinde)}</span>`).join('')}<small>${t('mostre')}</small></div></div>` : ''}`;
+  }
+  function mostraCartao(c) {
+    openSheet(`<h3>${t('cartao')}</h3>${cartaoHtml(c)}${escaloesHtml(c.escaloes)}<p class="muted fine">${t('comoConta')}</p><button type="button" class="linkbtn" id="ct-sair">${t('sair')}</button>`, r => {
+      r.querySelector('#ct-sair').addEventListener('click', () => { guardaCli(null); closeSheet(); toast(t('saiu')); });
+    });
+  }
+  async function cartaoSheet() {
+    if (!cli) return registoSheet();
+    openSheet(`<h3>${t('cartao')}</h3><div class="cartao vazio"><span class="muted">${t('aCarregar')}</span></div>`);
+    try { const c = await api('fidCartao', cli.token); if (!document.querySelector('.cartao.vazio')) return; if (!c) { guardaCli(null); return registoSheet(); } guardaCli({ token: cli.token, nome: c.nome }); mostraCartao(c); }
+    catch (e) { const el = document.querySelector('.cartao.vazio'); if (el) el.innerHTML = `<span class="muted">${esc(semFid(e) ? t('indispFid') : e.message)}</span>`; }
+  }
+  function registoSheet(depois) {
+    openSheet(`<h3>${t('cartao')}</h3><p class="muted" style="margin:0 0 8px">${t('regIntro')}</p>${escaloesHtml(FID().escaloes)}
+      <div class="form"><label>${t('nomeL')}<input id="rg-nome" autocomplete="name" maxlength="60"></label>
+      <label>${t('celL')}<input id="rg-cel" type="tel" inputmode="tel" autocomplete="tel" placeholder="84 123 4567" maxlength="20"></label>
+      <label>${t('emailL')}<input id="rg-email" type="email" inputmode="email" autocomplete="email" maxlength="80"></label>
+      <label class="chk"><input type="checkbox" id="rg-ok"><span>${t('aceitaL')}</span></label></div>
+      <p class="muted fine">${t('priv')}</p><div class="actions"><button class="btn primary" id="rg-go" type="button">${t('registar')}</button></div><p class="fine erro" id="rg-msg" role="alert"></p>`, r => {
+      const go = r.querySelector('#rg-go');
+      go.addEventListener('click', async () => {
+        go.disabled = true; r.querySelector('#rg-msg').textContent = '';
+        try {
+          const res = await api('fidRegistar', { nome: r.querySelector('#rg-nome').value, celular: r.querySelector('#rg-cel').value, email: r.querySelector('#rg-email').value, aceita: r.querySelector('#rg-ok').checked }, code, visita.id);
+          guardaCli({ token: res.token, nome: res.cartao.nome }); toast(t('bemVindo').replace('{n}', res.cartao.nome));
+          if (visita.conta) api('fidConta', code, visita.id, res.token, '').then(x => { contaInfo = x; }).catch(() => {});
+          if (depois) depois(res.cartao); else mostraCartao(res.cartao);
+        } catch (e) { r.querySelector('#rg-msg').textContent = semFid(e) ? t('indispFid') : e.message; go.disabled = false; }
+      });
+    });
+  }
+  async function pedirConta(pessoas) {
+    contaInfo = null; visita.conta = true; guardaVisita(); obrigadoSheet();
+    try { contaInfo = await api('fidConta', code, visita.id, cli ? cli.token : '', pessoas); }
+    catch (e) { if (semFid(e)) { try { await api('chamarGarcom', code, 'Conta', pessoas); } catch (e2) { toast(e2.message); } } else toast(e.message); }
+    preencheObrigado(); poll();
+  }
+  const qAtend = () => contaInfo && contaInfo.garcom ? t('comoAtDe').replace('{g}', contaInfo.garcom.nome) : t('comoAt');
+  function supHtml() {
+    const s = estado.supervisor;
+    if (s && !s.c1) return `<div class="sup-ok">${ic('pessoa')}<span>${t('supChamado')}</span></div>`;
+    return `<b>${t('supQ')}</b><p class="muted">${t('supTxt')}</p><button type="button" class="btn" id="sup-abre">${ic('pessoa')} ${t('supBtn')}</button>`;
+  }
+  function obrigadoSheet() {
+    const f = FID(); const jaAv = estado.avaliada || avEnviada;
+    openSheet(`<div class="obg"><div class="obg-hero">${ic('check')}<h3>${t('obrigado')}</h3>${f.agradecimento ? `<p>${esc(f.agradecimento)}</p>` : ''}<p class="muted">${t('contaCaminho')}</p></div>
+      <div id="obg-ct"></div>
+      <section class="obg-av" id="obg-av">${jaAv ? `<p class="obg-ok">${ic('check')} ${t('avObrigado')}</p>` : `
+        <h4 id="obg-q1">${esc(qAtend())}</h4><div class="stars" id="obg-st" role="radiogroup" aria-label="${esc(t('estrelasL'))}">${[1, 2, 3, 4, 5].map(n => `<button type="button" role="radio" aria-checked="${n === av.estrelas}" aria-label="${n}" data-n="${n}" class="${n <= av.estrelas ? 'on' : ''}">${ic('estrela')}</button>`).join('')}</div>
+        <h4>${t('comida')}</h4><div class="seg" data-q="comida">${['sim', 'razoavel', 'nao'].map((v, i) => `<button type="button" data-v="${v}" class="${av.comida === v ? 'on' : ''}">${t('comidaOp')[i]}</button>`).join('')}</div>
+        <h4>${t('espera')}</h4><div class="seg" data-q="espera">${['rapido', 'aceitavel', 'demorado'].map((v, i) => `<button type="button" data-v="${v}" class="${av.espera === v ? 'on' : ''}">${t('esperaOp')[i]}</button>`).join('')}</div>
+        <textarea id="obg-com" rows="2" maxlength="500" placeholder="${esc(t('coment'))}"></textarea>
+        <button class="btn primary" id="obg-env" type="button" ${av.estrelas ? '' : 'disabled'}>${t('enviarAv')}</button>`}</section>
+      <div class="obg-sup" id="obg-sup">${supHtml()}</div>
+      <div class="obg-links">${f.google ? `<a class="lk" href="${esc(f.google)}" target="_blank" rel="noopener">${ic('estrela')}<span><b>${t('google')}</b><small>${t('googleSub')}</small></span></a>` : ''}${f.instagram ? `<a class="lk" href="${esc(f.instagram)}" target="_blank" rel="noopener">${ic('camera')}<span><b>${t('insta')}</b><small>${esc(instaNome(f.instagram))}</small></span></a>` : ''}</div></div>`, r => {
+      const realca = () => { const box = r.querySelector('#obg-sup'); if (box) box.classList.toggle('destaque', (av.estrelas && av.estrelas <= 2) || av.comida === 'nao'); };
+      r.querySelectorAll('#obg-st button').forEach(b => b.addEventListener('click', () => { av.estrelas = +b.dataset.n; r.querySelectorAll('#obg-st button').forEach(x => { const on = +x.dataset.n <= av.estrelas; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(+x.dataset.n === av.estrelas)); }); r.querySelector('#obg-env').disabled = false; realca(); }));
+      r.querySelectorAll('.seg').forEach(g => g.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { av[g.dataset.q] = b.dataset.v; g.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); realca(); })));
+      const env = r.querySelector('#obg-env');
+      if (env) env.addEventListener('click', async () => {
+        env.disabled = true;
+        try { await api('fidAvaliar', code, visita.id, { estrelas: av.estrelas, comida: av.comida, espera: av.espera, comentario: r.querySelector('#obg-com').value, token: cli ? cli.token : '' }); avEnviada = true; r.querySelector('#obg-av').innerHTML = `<p class="obg-ok">${ic('check')} ${t('avObrigado')}</p>`; renderOrders(); }
+        catch (e) { toast(semFid(e) ? t('indispFid') : e.message); env.disabled = false; }
+      });
+      ligaSup(r); realca(); preencheObrigado();
+    });
+  }
+  function ligaSup(r) {
+    const ab = r.querySelector('#sup-abre'); if (!ab) return;
+    ab.addEventListener('click', () => {
+      const box = r.querySelector('#obg-sup');
+      box.innerHTML = `<b>${t('supQ')}</b><textarea id="sup-txt" rows="2" maxlength="500" placeholder="${esc(t('supMotivo'))}"></textarea><div class="actions"><button type="button" class="btn primary" id="sup-go">${ic('pessoa')} ${t('supEnviar')}</button></div>`;
+      r.querySelector('#sup-go').addEventListener('click', async () => {
+        const go = r.querySelector('#sup-go'); go.disabled = true; const txt = r.querySelector('#sup-txt').value;
+        try { await api('fidChamarSupervisor', code, visita.id, txt, cli ? cli.token : ''); }
+        catch (e) { if (semFid(e)) { try { await api('chamarGarcom', code, 'Pedir supervisor(a)' + (txt ? ': ' + txt.slice(0, 80) : ''), ''); } catch (e2) { toast(e2.message); go.disabled = false; return; } } else { toast(e.message); go.disabled = false; return; } }
+        estado.supervisor = estado.supervisor && !estado.supervisor.c1 ? estado.supervisor : { c0: new Date().toISOString(), aceite: '', c1: '' };
+        box.classList.remove('destaque'); box.innerHTML = supHtml(); toast(t('supChamado'), 4000); renderOrders(); poll();
+      });
+    });
+  }
+  function preencheObrigado() {
+    const q = document.getElementById('obg-q1'); if (q) q.textContent = qAtend();
+    const ct = document.getElementById('obg-ct'); if (!ct) return;
+    if (contaInfo && contaInfo.cartao) ct.innerHTML = `<p class="obg-ct-ok">${ic('presente')} ${t('esta')}</p>` + cartaoHtml(contaInfo.cartao, true);
+    else if (!cli) { ct.innerHTML = `<button type="button" class="fid-faixa" id="obg-reg">${ic('presente')}<span><b>${t('cartao')}</b><small>${t('convite')}</small></span><span class="seta" aria-hidden="true">›</span></button>`; document.getElementById('obg-reg').addEventListener('click', () => registoSheet(c => { contaInfo = Object.assign({}, contaInfo, { cartao: c }); obrigadoSheet(); })); }
+    else ct.innerHTML = '';
+  }
+  async function poll() { try { estado = await api('estadoMesaCliente', code, visita.id); renderOrders(); const k = JSON.stringify(estado.supervisor || null), box = document.getElementById('obg-sup'); if (k !== supKey && box && !document.getElementById('sup-txt')) { box.innerHTML = supHtml(); ligaSup(document.getElementById('sheet-root')); } supKey = k; } catch (e) {} }
   render(); poll(); setInterval(poll, CNB.POLL_CLIENTE_MS);
 })();
 </script>
