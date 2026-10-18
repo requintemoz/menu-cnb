@@ -41,9 +41,18 @@
   try { visita = JSON.parse(localStorage.getItem('cnb-visita-' + code) || 'null'); } catch (e) {}
   // menu com cache local de 10 min (poupa dados móveis)
   try { const c = JSON.parse(localStorage.getItem('cnb-menu') || 'null'); if (c && Date.now() - c.t < 600000) M = c.m; } catch (e) {}
-  try { mesa = await api('mesaPorCodigo', code); } catch (e) { document.getElementById('sem-mesa').hidden = false; document.getElementById('sem-mesa-msg').textContent = e.message; return; }
+  // mesa e menu pedidos em paralelo (cada chamada ao servidor custa 1–3 s); a mesa fica em cache local 24 h
+  const pMenu = M ? null : api('menuPublico').then(m => m, e => e);
+  let mesaC = null; try { mesaC = JSON.parse(localStorage.getItem('cnb-mesa-' + code) || 'null'); } catch (e) {}
+  if (mesaC && Date.now() - mesaC.t < 86400000) {
+    mesa = mesaC.m;
+    api('mesaPorCodigo', code).then(m => { mesa = m; try { localStorage.setItem('cnb-mesa-' + code, JSON.stringify({ t: Date.now(), m })); } catch (e) {} }).catch(() => {});
+  } else {
+    try { mesa = await api('mesaPorCodigo', code); try { localStorage.setItem('cnb-mesa-' + code, JSON.stringify({ t: Date.now(), m: mesa })); } catch (e) {} }
+    catch (e) { document.getElementById('sem-mesa').hidden = false; document.getElementById('sem-mesa-msg').textContent = e.message; return; }
+  }
   if (!visita || Date.now() - visita.t > 3 * 3600000) { visita = { id: 'V' + Date.now().toString(36), t: Date.now() }; try { localStorage.setItem('cnb-visita-' + code, JSON.stringify(visita)); } catch (e) {} }
-  if (!M) { M = await api('menuPublico'); try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }
+  if (!M) { const r = await pMenu; if (r instanceof Error) { document.getElementById('sem-mesa').hidden = false; document.getElementById('sem-mesa-msg').textContent = r.message; return; } M = r; try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }
   else api('menuPublico').then(m => { M = m; try { localStorage.setItem('cnb-menu', JSON.stringify({ t: Date.now(), m: M })); } catch (e) {} }).catch(() => {});
   const byId = {}; M.menu.forEach(c => c.itens.forEach(i => { i.catNome = c.nome; byId[i.id] = i; }));
   const nome = i => (L === 'en' && i.nome_en) ? i.nome_en : i.nome;
