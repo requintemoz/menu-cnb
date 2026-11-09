@@ -8,9 +8,9 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261109c">
-<script src="config.js?v=20261109c"></script>
-<script src="comum.js?v=20261109c"></script>
+<link rel="stylesheet" href="estilos.css?v=20261109d">
+<script src="config.js?v=20261109d"></script>
+<script src="comum.js?v=20261109d"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Ecrã do balcão</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num"></span> <span id="b-who" class="muted"></span> <button type="button" id="b-exit">Sair</button></div></header>
@@ -20,7 +20,7 @@
     <div class="kpis" id="b-kpis"></div>
     <div class="b-grid">
       <div>
-        <div class="card map"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 class="section-title">Mapa de mesas</h2><span class="muted" style="font-size:13px">Toque para atribuir; toque longo para seleccionar várias</span></div><div id="b-map"></div><div class="row" id="b-selbar" hidden style="margin-top:8px"><span class="pill sea" id="b-seln"></span><button class="btn sm primary" id="b-selgo" type="button">Atribuir seleccionadas</button><button class="btn sm ghost" id="b-selx" type="button">Limpar</button></div></div>
+        <div class="card map"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 class="section-title">Mapa de mesas</h2><span class="muted" style="font-size:13px" id="b-maphint">Escolha um garçom e toque ou arraste nas mesas</span></div><div id="b-pinc"></div><div id="b-map"></div><div class="row" id="b-selbar" hidden style="margin-top:8px"><span class="pill sea" id="b-seln"></span><button class="btn sm primary" id="b-selgo" type="button">Atribuir seleccionadas</button><button class="btn sm ghost" id="b-selx" type="button">Limpar</button></div></div>
         <div class="card staff" style="margin-top:12px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 class="section-title">Em turno</h2><button class="btn sm" id="b-shift" type="button">Entrar / sair de turno</button></div><table><thead><tr><th>Nome</th><th>Entrada</th><th>Mesas</th><th>Pendentes</th></tr></thead><tbody id="b-staff"></tbody></table></div>
       </div>
       <div class="b-lists">
@@ -38,7 +38,7 @@
 <script>
 (function () {
   const { api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
-  let S = null, token = null, user = null, sel = new Set(), foraAntes = 0, chVistas = null, supVistas = null; const off = offlineBar(); armarSom();
+  let S = null, token = null, user = null, sel = new Set(), pincel = null, pintando = false, gravT = null, gravando = false; const pend = new Map(); foraAntes = 0, chVistas = null, supVistas = null; const off = offlineBar(); armarSom();
   setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
   function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('b-who').textContent = user.nome; load(); setInterval(load, CNB.POLL_STAFF_MS); }
   const saved = sess.get(); if (saved) start(saved); else loginUI(['caixa', 'supervisor', 'gerente'], start);
@@ -46,11 +46,9 @@
   const nome = id => (S && S.nomes[id]) || id || '-';
   async function load() {
     try { S = await api('bEstado', token); off.off(); } catch (e) { if (/Sessão|permissão/.test(e.message)) { sess.clear(); location.reload(); return; } off.on(); return; }
+    pend.forEach((u, id) => { const x = S.mesas.find(y => y.id === id); if (x) x.garcom = u; }); // o que ainda não foi gravado prevalece
     const L = S.limites; const atrib = {}; S.mesas.forEach(m => atrib[m.id] = m.garcom);
-    const est = m => { const ped = S.pedidos.filter(p => p.mesa === m.id); const ch = S.chamadas.filter(c => c.mesa === m.id); let lv = m.garcom ? 'ok' : 'sem'; const n = ped.length + ch.length; if (n) { lv = 'warn'; if (!m.garcom || ped.some(p => mins(p.t0) > (p.t2 ? L.entregar : p.t1 ? L.registar : L.aceitar)) || ch.some(c => mins(c.c0) > L.chamada)) lv = 'crit'; } return { lv, n }; };
-    const zonas = [...new Set(S.mesas.map(m => m.zona))];
-    document.getElementById('b-map').innerHTML = zonas.map(z => `<div class="zone"><h4>${esc(z)}</h4><div class="tables">${S.mesas.filter(m => m.zona === z).map(m => { const e = est(m); return `<button type="button" class="tb ${e.lv} ${sel.has(m.id) ? 'sel' : ''}" data-m="${m.id}"><span class="n">${esc(m.nome)}</span><span class="w">${m.garcom ? esc(nome(m.garcom)) : 'sem garçom'}</span><span class="c">${e.n ? e.n + ' pendente' + (e.n > 1 ? 's' : '') : ''}</span></button>`; }).join('')}</div></div>`).join('');
-    document.querySelectorAll('#b-map .tb').forEach(b => { let t; b.addEventListener('pointerdown', () => { t = setTimeout(() => { t = null; sel.has(b.dataset.m) ? sel.delete(b.dataset.m) : sel.add(b.dataset.m); selbar(); load(); }, 500); }); b.addEventListener('pointerup', () => { if (t) { clearTimeout(t); if (sel.size) { sel.has(b.dataset.m) ? sel.delete(b.dataset.m) : sel.add(b.dataset.m); selbar(); load(); } else atribuir([b.dataset.m]); } }); b.addEventListener('pointerleave', () => clearTimeout(t)); });
+    renderPinc(); renderMapa();
     const semG = S.mesas.filter(m => !m.garcom).length; const garcons = S.emTurno.filter(t => t.perfil === 'garcom');
     const ped = S.pedidos.filter(p => !p.t2), chs = S.chamadas.filter(c => c.motivo !== 'Conta'), cts = S.chamadas.filter(c => c.motivo === 'Conta');
     const fora = ped.filter(p => mins(p.t0) > (p.t1 ? L.registar : L.aceitar)).length + S.chamadas.filter(c => mins(c.c0) > L.chamada).length;
@@ -104,11 +102,83 @@
     } catch (e) { out.innerHTML = `<div class="empty">${esc(/não permitida/i.test(e.message) ? 'O Cartão Requinte ainda não está activo no servidor.' : e.message)}</div>`; }
   }
   document.getElementById('b-fid-go').addEventListener('click', procurar); document.getElementById('b-fid-q').addEventListener('keydown', e => { if (e.key === 'Enter') procurar(); });
+  // ---------- atribuição rápida de mesas: pincel por garçom, intervalos, dividir, repetir ----------
+  const CORES = ['#2e7d6b', '#b5523b', '#3c6e9f', '#8a5a9e', '#c08a1e', '#4f7f2a', '#a33f6b', '#2f8f9d', '#7a6a3a', '#d0672f', '#5a5fb0', '#6b8e23'];
+  const garconsTurno = () => (S ? S.emTurno.filter(t => t.perfil === 'garcom') : []).slice().sort((a, b) => a.nome.localeCompare(b.nome));
+  const cor = id => { const i = garconsTurno().findIndex(g => g.id === id); return i < 0 ? '' : CORES[i % CORES.length]; };
+  const numMesa = m => { const n = parseInt(String(m.nome).replace(/\D/g, ''), 10); return isNaN(n) ? 1e9 : n; };
+  function renderMapa() {
+    if (!S) return; const L = S.limites; const emT = new Set(garconsTurno().map(g => g.id));
+    const est = m => { const ped = S.pedidos.filter(p => p.mesa === m.id); const ch = S.chamadas.filter(c => c.mesa === m.id); let lv = m.garcom ? 'ok' : 'sem'; const n = ped.length + ch.length; if (n) { lv = 'warn'; if (!m.garcom || ped.some(p => mins(p.t0) > (p.t2 ? L.entregar : p.t1 ? L.registar : L.aceitar)) || ch.some(c => mins(c.c0) > L.chamada)) lv = 'crit'; } return { lv, n }; };
+    const zonas = [...new Set(S.mesas.map(m => m.zona))];
+    const mapa = document.getElementById('b-map'); mapa.classList.toggle('pintar', pincel !== null);
+    mapa.innerHTML = zonas.map(z => `<div class="zone">${z ? `<h4>${esc(z)}</h4>` : ''}<div class="tables">${S.mesas.filter(m => m.zona === z).map(m => { const e = est(m); const c = m.garcom && emT.has(m.garcom) ? cor(m.garcom) : ''; const fora = m.garcom && !emT.has(m.garcom); return `<button type="button" class="tb ${e.lv} ${sel.has(m.id) ? 'sel' : ''} ${pend.has(m.id) ? 'pend' : ''} ${fora ? 'fora' : ''}" data-m="${m.id}"${c ? ` style="--gc:${c}"` : ''}><span class="n">${esc(m.nome)}</span><span class="w">${m.garcom ? esc(nome(m.garcom)) + (fora ? ' (fora)' : '') : 'sem garçom'}</span><span class="c">${e.n ? e.n + ' pendente' + (e.n > 1 ? 's' : '') : ''}</span></button>`; }).join('')}</div></div>`).join('');
+  }
+  function ultimaDistribuicao() { try { const d = JSON.parse(localStorage.getItem('cnb-distribuicao') || 'null'); return d && d.mapa ? d : null; } catch (e) { return null; } }
+  function guardarDistribuicao() { try { const mapa = {}; S.mesas.forEach(m => { if (m.garcom) mapa[m.id] = m.garcom; }); const hoje = new Date().toISOString().slice(0, 10); const d = ultimaDistribuicao(); const ant = d && d.dia !== hoje ? d : (d && d.anterior) || null; localStorage.setItem('cnb-distribuicao', JSON.stringify({ dia: hoje, mapa, nomes: S.nomes, anterior: ant ? { dia: ant.dia, mapa: ant.mapa, nomes: ant.nomes } : null })); } catch (e) {} }
+  function distribuicaoAnterior() { const d = ultimaDistribuicao(); if (!d) return null; const hoje = new Date().toISOString().slice(0, 10); return d.dia !== hoje ? d : d.anterior; }
+  function renderPinc() {
+    if (!S) return; const box = document.getElementById('b-pinc'); const inp = document.getElementById('pg-int'); const val = inp ? inp.value : ''; const foco = document.activeElement === inp;
+    const gs = garconsTurno(); const conta = id => S.mesas.filter(m => (m.garcom || '') === id).length; const emT = new Set(gs.map(g => g.id)); const nFora = S.mesas.filter(m => m.garcom && !emT.has(m.garcom)).length;
+    const ant = distribuicaoAnterior(); const nomeP = pincel === '' ? 'ninguém (retirar)' : nome(pincel);
+    box.innerHTML = `<div class="pinc"><div class="pinc-g">${gs.map(g => `<button type="button" class="pg ${pincel === g.id ? 'on' : ''}" data-pg="${g.id}" style="--gc:${cor(g.id)}"><i></i>${esc(g.nome)} <b class="num">${conta(g.id)}</b></button>`).join('') || '<span class="muted">Nenhum garçom em turno. Use "Entrar / sair de turno".</span>'}<button type="button" class="pg sem ${pincel === '' ? 'on' : ''}" data-pg=""><i></i>Sem garçom <b class="num">${conta('')}</b></button></div>
+      ${pincel !== null ? `<div class="pinc-acc"><span>Toque ou arraste nas mesas para dar a <b>${esc(nomeP)}</b>.</span><span class="row" style="gap:6px"><input id="pg-int" placeholder="ou escreva: 1-20, 25" autocomplete="off" style="width:150px"><button type="button" class="btn sm primary" id="pg-int-go">Dar</button><button type="button" class="btn sm" id="pg-fim">Terminar</button></span></div>`
+        : `<div class="pinc-acc">${gs.length ? `<button type="button" class="btn sm" id="pg-div">Dividir as mesas pelos ${gs.length} garçons</button>` : ''}${ant && gs.length ? `<button type="button" class="btn sm" id="pg-rep">Repetir a distribuição de ${esc(ant.dia.slice(8, 10) + '/' + ant.dia.slice(5, 7))}</button>` : ''}${nFora ? `<span class="pill warn">${nFora} mesa(s) com garçom fora de turno</span>` : ''}</div>`}
+      <small class="muted" id="pg-est">${pend.size ? (gravando ? 'A gravar ' : 'Por gravar: ') + pend.size + ' mesa(s)' : ''}</small></div>`;
+    box.querySelectorAll('[data-pg]').forEach(b => b.addEventListener('click', () => { pincel = pincel === b.dataset.pg ? null : b.dataset.pg; sel = new Set(); selbar(); renderPinc(); renderMapa(); }));
+    const fim = box.querySelector('#pg-fim'); if (fim) fim.addEventListener('click', () => { pincel = null; renderPinc(); renderMapa(); });
+    const ni = box.querySelector('#pg-int'); if (ni) { ni.value = val; if (foco) ni.focus(); const go = () => { const ids = intervalo(ni.value); if (!ids.length) { toast('Escreva os números das mesas, por exemplo 1-20, 25'); return; } ids.forEach(id => pintar(id, true)); ni.value = ''; renderPinc(); renderMapa(); toast(ids.length + ' mesa(s) para ' + nomeP); }; box.querySelector('#pg-int-go').addEventListener('click', go); ni.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }); }
+    const dv = box.querySelector('#pg-div'); if (dv) dv.addEventListener('click', dividir);
+    const rp = box.querySelector('#pg-rep'); if (rp) rp.addEventListener('click', () => repetir(ant));
+  }
+  function intervalo(txt) {
+    const porNum = {}; S.mesas.forEach(m => { porNum[numMesa(m)] = m.id; }); const out = [];
+    String(txt).replace(/(\d+)\s*(?:-|a|até)\s*(\d+)|(\d+)/gi, (_, a, b, c) => { const i = Number(a || c), f = Number(b || c); for (let n = Math.min(i, f); n <= Math.max(i, f); n++) if (porNum[n]) out.push(porNum[n]); return _; });
+    return [...new Set(out)];
+  }
+  function pintar(id, semDesenho) {
+    if (pincel === null) return; const m = S.mesas.find(x => x.id === id); if (!m || (m.garcom || '') === pincel) return;
+    m.garcom = pincel; pend.set(id, pincel); clearTimeout(gravT); gravT = setTimeout(gravar, 900);
+    if (!semDesenho) { renderMapa(); const e = document.getElementById('pg-est'); if (e) e.textContent = 'Por gravar: ' + pend.size + ' mesa(s)'; }
+  }
+  async function gravar() {
+    if (gravando || !pend.size) return; gravando = true; const pares = [...pend.entries()]; const e = document.getElementById('pg-est'); if (e) e.textContent = 'A gravar ' + pares.length + ' mesa(s)';
+    try {
+      try { await api('bAtribuirLote', token, pares); }
+      catch (err) { if (!/não permitida/i.test(err.message)) throw err; const porG = {}; pares.forEach(([m, u]) => (porG[u] = porG[u] || []).push(m)); for (const u of Object.keys(porG)) await api('bAtribuir', token, porG[u], u); } // servidor ainda antigo
+      pares.forEach(([m, u]) => { if (pend.get(m) === u) pend.delete(m); }); guardarDistribuicao();
+      if (e) e.textContent = pend.size ? 'Por gravar: ' + pend.size + ' mesa(s)' : 'Gravado';
+    } catch (err) { if (e) e.textContent = 'Falhou a gravar, nova tentativa em 5 s'; setTimeout(gravar, 5000); }
+    gravando = false; if (pend.size) { clearTimeout(gravT); gravT = setTimeout(gravar, 900); } else { renderMapa(); renderPinc(); }
+  }
+  function aplicar(mapaNovo, msg) { const ant = pincel; Object.entries(mapaNovo).forEach(([id, u]) => { pincel = u; pintar(id, true); }); pincel = ant; clearTimeout(gravT); gravar(); renderPinc(); renderMapa(); toast(msg); }
+  function dividir() {
+    const gs = garconsTurno(); const ms = S.mesas.slice().sort((a, b) => numMesa(a) - numMesa(b)); const k = gs.length; const base = Math.floor(ms.length / k), resto = ms.length % k; const mapaNovo = {}; const resumo = []; let i = 0;
+    gs.forEach((g, j) => { const n = base + (j < resto ? 1 : 0); const bloco = ms.slice(i, i + n); i += n; bloco.forEach(m => mapaNovo[m.id] = g.id); if (bloco.length) resumo.push(`<div class="opt"><span><i class="dot" style="--gc:${cor(g.id)}"></i>${esc(g.nome)}</span><span class="muted">mesas ${esc(bloco[0].nome)} a ${esc(bloco[bloco.length - 1].nome)} (${bloco.length})</span></div>`); });
+    openSheet(`<h3>Dividir as mesas</h3><p class="muted" style="margin:0 0 8px">Blocos seguidos, por ordem de número. Depois pode acertar mesa a mesa com o pincel.</p>${resumo.join('')}<div class="actions"><button class="btn primary" id="dv-ok" type="button">Aplicar</button></div>`, r => r.querySelector('#dv-ok').addEventListener('click', () => { closeSheet(); aplicar(mapaNovo, 'Mesas divididas por ' + k + ' garçons'); }));
+  }
+  function repetir(ant) {
+    const emT = new Set(garconsTurno().map(g => g.id)); const mapaNovo = {}; const cont = {}; const faltam = {};
+    Object.entries(ant.mapa).forEach(([id, u]) => { if (!S.mesas.some(m => m.id === id)) return; if (emT.has(u)) { mapaNovo[id] = u; cont[u] = (cont[u] || 0) + 1; } else faltam[u] = (faltam[u] || 0) + 1; });
+    const nm = id => (S.nomes[id] || (ant.nomes || {})[id] || id);
+    openSheet(`<h3>Repetir a distribuição de ${esc(ant.dia.slice(8, 10) + '/' + ant.dia.slice(5, 7))}</h3>${Object.keys(cont).map(u => `<div class="opt"><span><i class="dot" style="--gc:${cor(u)}"></i>${esc(nm(u))}</span><span class="muted">${cont[u]} mesa(s)</span></div>`).join('') || '<p class="muted">Nenhum dos garçons desse dia está em turno.</p>'}${Object.keys(faltam).length ? `<p class="muted" style="margin-top:8px">Fora de turno hoje (as mesas deles ficam como estão): ${Object.keys(faltam).map(u => esc(nm(u)) + ' (' + faltam[u] + ')').join(', ')}</p>` : ''}<div class="actions"><button class="btn primary" id="rp-ok" type="button" ${Object.keys(cont).length ? '' : 'disabled'}>Aplicar</button></div>`, r => r.querySelector('#rp-ok').addEventListener('click', () => { closeSheet(); aplicar(mapaNovo, 'Distribuição repetida'); }));
+  }
+  // toques no mapa: com pincel, pinta (também a arrastar); sem pincel, toque abre a escolha e toque longo selecciona várias
+  (function () {
+    const mapa = document.getElementById('b-map'); let t = null, alvo = null, x0 = 0, y0 = 0;
+    mapa.addEventListener('pointerdown', e => { const tb = e.target.closest('.tb'); if (!tb) return; alvo = tb.dataset.m; x0 = e.clientX; y0 = e.clientY;
+      if (pincel !== null) { pintando = true; if (tb.releasePointerCapture) try { tb.releasePointerCapture(e.pointerId); } catch (_) {} pintar(alvo); e.preventDefault(); return; }
+      t = setTimeout(() => { t = null; sel.has(alvo) ? sel.delete(alvo) : sel.add(alvo); selbar(); renderMapa(); alvo = null; }, 500); });
+    mapa.addEventListener('pointermove', e => { if (pintando) { const el = document.elementFromPoint(e.clientX, e.clientY); const tb = el && el.closest && el.closest('#b-map .tb'); if (tb) pintar(tb.dataset.m); return; } if (t && Math.hypot(e.clientX - x0, e.clientY - y0) > 12) { clearTimeout(t); t = null; alvo = null; } });
+    const fim = () => { if (pintando) { pintando = false; return; } if (t) { clearTimeout(t); t = null; if (alvo) { if (sel.size) { sel.has(alvo) ? sel.delete(alvo) : sel.add(alvo); selbar(); renderMapa(); } else atribuir([alvo]); } } alvo = null; };
+    mapa.addEventListener('pointerup', fim); mapa.addEventListener('pointercancel', () => { pintando = false; clearTimeout(t); t = null; alvo = null; }); document.addEventListener('pointerup', () => { pintando = false; });
+  })();
   function selbar() { document.getElementById('b-selbar').hidden = !sel.size; document.getElementById('b-seln').textContent = sel.size + ' seleccionada(s)'; }
   document.getElementById('b-selgo').addEventListener('click', () => atribuir([...sel])); document.getElementById('b-selx').addEventListener('click', () => { sel = new Set(); selbar(); load(); });
   function atribuir(mesas) {
     const g = S.emTurno.filter(t => t.perfil === 'garcom');
-    openSheet(`<div class="assign-pop"><h3>Atribuir ${mesas.length > 1 ? mesas.length + ' mesas' : 'a mesa ' + esc(mesas[0])}</h3><div class="ws">${g.length ? g.map(p => `<button type="button" class="opt" data-w="${p.id}"><span>${esc(p.nome)}</span><span class="muted num">${S.mesas.filter(m => m.garcom === p.id).length} mesas</span></button>`).join('') : '<div class="empty">Nenhum garçom em turno</div>'}<button type="button" class="opt" data-w=""><span>Retirar atribuição</span></button></div></div>`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', async () => { try { await api('bAtribuir', token, mesas, b.dataset.w); sel = new Set(); selbar(); closeSheet(); load(); } catch (e) { toast(e.message); } })));
+    const nm0 = (S.mesas.find(m => m.id === mesas[0]) || {}).nome || mesas[0];
+    openSheet(`<div class="assign-pop"><h3>Atribuir ${mesas.length > 1 ? mesas.length + ' mesas' : 'a mesa ' + esc(nm0)}</h3><div class="ws">${g.length ? g.map(p => `<button type="button" class="opt" data-w="${p.id}"><span>${esc(p.nome)}</span><span class="muted num">${S.mesas.filter(m => m.garcom === p.id).length} mesas</span></button>`).join('') : '<div class="empty">Nenhum garçom em turno</div>'}<button type="button" class="opt" data-w=""><span>Retirar atribuição</span></button></div></div>`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { const u = b.dataset.w; const m = {}; mesas.forEach(id => m[id] = u); sel = new Set(); selbar(); closeSheet(); aplicar(m, mesas.length > 1 ? mesas.length + ' mesas atribuídas' : 'Mesa atribuída'); })));
   }
   document.getElementById('b-shift').addEventListener('click', async () => {
     const us = await api('bListarUtilizadores', token); const on = new Set(S.emTurno.map(t => t.id));
