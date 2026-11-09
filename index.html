@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css">
-<script src="config.js"></script>
-<script src="comum.js"></script>
-<script src="traducoes.js"></script>
+<link rel="stylesheet" href="estilos.css?v=20261109c">
+<script src="config.js?v=20261109c"></script>
+<script src="comum.js?v=20261109c"></script>
+<script src="traducoes.js?v=20261109c"></script>
 </head>
 <body class="cliente">
 <svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -95,10 +95,11 @@
   const byId = {}; function indexar() { M.menu.forEach(c => c.itens.forEach(i => { i.catNome = c.nome; i.cat_en = c.nome_en || ''; byId[i.id] = i; })); } indexar(); // artigos que saem do menu ficam no índice para o carrinho não falhar
   const noMenu = id => M.menu.some(c => c.itens.some(i => i.id === id));
   // conteúdo em inglês: primeiro o que vem da folha (campos _en), depois traducoes.js, senão fica em português
+  const limpaT = U.limpa || (s => s); // comum.js antigo em cache não tem limpa
   const normT = s => String(s || '').replace(/[\u2013\u2014]/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
   const TRN = {}; Object.entries(window.TRAD_EN || {}).forEach(([k, v]) => { TRN[normT(k)] = v; });
-  const tx = s => { if (!s) return s; if (L !== 'en') return U.limpa(s); const v = TRN[normT(s)]; if (v) return v; let o = String(s); (window.TRAD_EN_REGRAS || []).forEach(([re, r]) => { o = o.replace(re, r); }); return o; };
-  const exT = (o, k) => !o ? '' : L === 'en' ? U.limpa(o[k + '_en'] || tx(o[k])) : U.limpa(o[k]);
+  const tx = s => { if (!s) return s; if (L !== 'en') return limpaT(s); const v = TRN[normT(s)]; if (v) return v; let o = String(s); (window.TRAD_EN_REGRAS || []).forEach(([re, r]) => { o = o.replace(re, r); }); return o; };
+  const exT = (o, k) => !o ? '' : L === 'en' ? limpaT(o[k + '_en'] || tx(o[k])) : limpaT(o[k]);
   const nome = i => exT(i, 'nome');
   const secN = c => exT(c, 'nome');
   const catN = i => L === 'en' ? (i.cat_en || tx(i.catNome)) : i.catNome;
