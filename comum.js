@@ -1,4 +1,4 @@
-/* Menu Digital CNB — funções comuns (API, folha, toast, formatos, sessão) */
+/* Menu Digital CNB - funções comuns (API, folha, toast, formatos, sessão) */
 (function () {
   const C = window.CNB;
   async function api(fn, ...args) {
@@ -9,10 +9,12 @@
   function openSheet(html, after) { const r = document.getElementById('sheet-root'); r.innerHTML = `<div class="sheet-bg" id="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; document.getElementById('sheet-bg').addEventListener('click', e => { if (e.target.id === 'sheet-bg') closeSheet(); }); if (after) after(r); }
   function closeSheet() { document.getElementById('sheet-root').innerHTML = ''; }
   const fmt = n => Math.round(Number(n)).toLocaleString('pt-PT') + ' MT';
-  const hhmm = t => t ? new Date(t).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—';
+  const hhmm = t => t ? new Date(t).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '-';
   const mins = t => (Date.now() - new Date(t)) / 60000;
   const nivel = (m, lim) => m > lim ? 'crit' : m > lim * 0.6 ? 'warn' : 'ok';
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // texto vindo do Loyverse ou da folha: troca travessões, aspas angulares, reticências e pontos médios por sinais simples
+  const limpa = s => String(s == null ? '' : s).replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, '$1-$2').replace(/\s+[\u2013\u2014]\s+([^\u2013\u2014]+)$/, ' ($1)').replace(/[\u2013\u2014]/g, '-').replace(/[\u00ab\u00bb\u201c\u201d]/g, '"').replace(/\u2026/g, '...').replace(/\s\u00b7\s/g, ', ');
+  const esc = s => limpa(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // sessão do pessoal (token em localStorage; 6 h no servidor)
   const sess = { get() { try { return JSON.parse(localStorage.getItem('cnb-sess') || 'null'); } catch (e) { return null; } }, set(s) { try { localStorage.setItem('cnb-sess', JSON.stringify(s)); } catch (e) {} }, clear() { try { localStorage.removeItem('cnb-sess'); } catch (e) {} } };
   async function loginUI(perfis, onOk) {
@@ -25,6 +27,6 @@
   let actx = null; function beep(n, freq) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); for (let i = 0; i < (n || 1); i++) { const o = actx.createOscillator(), g = actx.createGain(); o.connect(g); g.connect(actx.destination); o.frequency.value = freq || 880; g.gain.value = 0.15; o.start(actx.currentTime + i * 0.25); o.stop(actx.currentTime + i * 0.25 + 0.15); } } catch (e) {} }
   function armarSom() { document.addEventListener('pointerdown', () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }, { once: true }); }
   // indicador de ligação
-  function offlineBar() { const el = document.createElement('div'); el.className = 'offline'; el.hidden = true; el.textContent = 'Sem ligação. A tentar de novo…'; document.body.appendChild(el); return { on() { el.hidden = false; }, off() { el.hidden = true; } }; }
-  window.U = { api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar };
+  function offlineBar() { const el = document.createElement('div'); el.className = 'offline'; el.hidden = true; el.textContent = 'Sem ligação. A tentar de novo...'; document.body.appendChild(el); return { on() { el.hidden = false; }, off() { el.hidden = true; } }; }
+  window.U = { api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, limpa, sess, loginUI, beep, armarSom, offlineBar };
 })();

@@ -1,4 +1,4 @@
-// Menu Digital CNB — configuração das páginas.
+// Menu Digital CNB - configuração das páginas.
 // Depois de implementar o Apps Script como aplicação Web, cole aqui o URL que termina em /exec.
 window.CNB = {
   API_URL: 'https://script.google.com/macros/s/AKfycbxbmvSyLbp9DWlRvstQgI445n_ElYpjZxkovyP9IH_ksB1Ht7I0Lq_lj4XfQL8ekqCm/exec',

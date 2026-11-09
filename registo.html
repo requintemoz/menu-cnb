@@ -59,7 +59,7 @@
     document.getElementById('r-list').innerHTML = S.fila.length ? S.fila.map(p => {
       const m = mins(p.t0); const n = p.linhas.reduce((a, l) => a + Number(l.qtd), 0); const obs = p.linhas.filter(l => l.obs && !l.indisponivel).length;
       const meu = p.regPor === String(user.id); const estado = p.regPor ? (meu ? '<span class="pill sea">consigo</span>' : `<span class="pill grey">com ${esc(p.regNome)}</span>`) : '<span class="pill acc">livre</span>';
-      return `<button class="wi ${nivel(m, lim())}" type="button" data-p="${esc(p.id)}"><span class="mesa">${esc(p.mesaNome)}</span><span><b>${n} artigo(s)</b> ${estado}${obs ? ` <span class="pill warn">${obs} com observações</span>` : ''}<br><span class="sub">${p.linhas.slice(0, 3).map(l => l.qtd + '× ' + esc(l.nome)).join(', ')}${p.linhas.length > 3 ? '…' : ''}</span><br><span class="sub">${p.garcomMesa ? 'garçom da mesa: ' + esc(nome(p.garcomMesa)) : 'mesa sem garçom atribuído'}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
+      return `<button class="wi ${nivel(m, lim())}" type="button" data-p="${esc(p.id)}"><span class="mesa">${esc(p.mesaNome)}</span><span><b>${n} artigo(s)</b> ${estado}${obs ? ` <span class="pill warn">${obs} com observações</span>` : ''}<br><span class="sub">${p.linhas.slice(0, 3).map(l => l.qtd + '× ' + esc(l.nome)).join(', ')}${p.linhas.length > 3 ? '...' : ''}</span><br><span class="sub">${p.garcomMesa ? 'garçom da mesa: ' + esc(nome(p.garcomMesa)) : 'mesa sem garçom atribuído'}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
     }).join('') : '<div class="empty">Sem pedidos por registar. A página avisa com som quando chegar um novo.</div>';
     document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.p)));
     if (aberto && !S.fila.some(p => p.id === aberto)) { aberto = null; }
@@ -80,13 +80,13 @@
       <ol class="reg-passos"><li>No Loyverse, abra um ticket com o nome <b>Mesa ${esc(p.mesaNome)}</b>.</li><li>Lance os artigos por esta ordem. As linhas a amarelo têm opções ou notas: lance-as e marque cada uma.</li><li>Guarde o ticket e atribua-o ao garçom escolhido abaixo.</li></ol>
       <div class="lv-list">${Object.entries(grp).map(([c, ls]) => `<div class="lv-cat">${esc(c)}</div>${ls.map(l => {
         const i = p.linhas.indexOf(l); const ob = l.obs && !l.indisponivel;
-        return `<div class="lv-line${ob ? ' obs' : ''}"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${ob ? `<div>${chips(l)}</div>` : (l.variante ? `<div class="mod">${esc(l.variante)}</div>` : '')}${l.nota ? `<div class="note">Nota do cliente: “${esc(l.nota)}”</div>` : ''}
+        return `<div class="lv-line${ob ? ' obs' : ''}"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${ob ? `<div>${chips(l)}</div>` : (l.variante ? `<div class="mod">${esc(l.variante)}</div>` : '')}${l.nota ? `<div class="note">Nota do cliente: "${esc(l.nota)}"</div>` : ''}
           <div class="row" style="margin-top:6px;gap:8px">${ob ? `<label class="reg-chk"><input type="checkbox" data-chk="${i}"> lançado com as opções</label>` : ''}${l.indisponivel ? '<span class="pill crit">esgotado</span>' : `<button class="btn sm ghost" type="button" data-ind="${l._row}" style="font-size:12px">esgotado</button>`}</div></div></div>`;
       }).join('')}`).join('')}</div>
       <label class="eyebrow" for="r-garcom" style="display:block;margin-top:12px">Ticket atribuído a</label>
-      <select id="r-garcom" style="width:100%;margin:4px 0 4px"><option value="">Escolha o garçom…</option>${opG}</select>
+      <select id="r-garcom" style="width:100%;margin:4px 0 4px"><option value="">Escolha o garçom...</option>${opG}</select>
       ${g0 ? '' : '<p class="muted" style="font-size:12px;margin:0">A mesa ainda não tem garçom: fica atribuída ao garçom que escolher.</p>'}
-      <div class="actions"><button class="btn primary" id="r-ok" type="button" disabled>Registado e atribuído</button><button class="btn" id="r-largar" type="button">Devolver à fila</button><button class="btn ghost" id="r-anul" type="button">Anular…</button></div>
+      <div class="actions"><button class="btn primary" id="r-ok" type="button" disabled>Registado e atribuído</button><button class="btn" id="r-largar" type="button">Devolver à fila</button><button class="btn ghost" id="r-anul" type="button">Anular...</button></div>
       <p class="muted" id="r-falta" style="font-size:12px;margin:8px 0 0"></p></div>`, r => {
       const ok = r.querySelector('#r-ok'); const sel = r.querySelector('#r-garcom');
       const rever = () => {

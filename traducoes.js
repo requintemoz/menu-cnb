@@ -21,7 +21,7 @@ window.TRAD_EN = {
   'Batidos, Slush e Frappés': 'Milkshakes, Slush and Frappés',
   'Cafés e Chás': 'Coffee and Tea',
   'Cafés, Chás e Bebidas Quentes': 'Coffee, Tea and Hot Drinks',
-  'Mocktails — Cocktails sem Álcool': 'Mocktails (Alcohol-free Cocktails)',
+  'Mocktails - Cocktails sem Álcool': 'Mocktails (Alcohol-free Cocktails)',
   'Mocktails': 'Mocktails',
   'Cocktails': 'Cocktails',
   'Gin tónico': 'Gin and Tonic',
@@ -237,7 +237,7 @@ window.TRAD_EN = {
   /* destaques de exemplo */
   'Apanhado esta manhã. Enquanto houver.': 'Caught this morning. While stocks last.',
   'Com o Terra Linda Syrah a acompanhar.': 'Best paired with Terra Linda Syrah.',
-  'Happy hour 17h–19h': 'Happy hour 5 to 7 pm',
+  'Happy hour 17h-19h': 'Happy hour 5 to 7 pm',
   '2M draft 500 ml a 150 MT no terraço.': '2M draft 500 ml for 150 MT on the terrace.',
   'Happy hour: 2.ª cerveja a metade do preço': 'Happy hour: second beer at half price',
   'Das 17h às 19h, dias úteis.': 'From 5 to 7 pm, weekdays.',

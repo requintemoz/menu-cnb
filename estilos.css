@@ -1,4 +1,4 @@
-/* Menu Digital CNB — estilos comuns às quatro páginas */
+/* Menu Digital CNB - estilos comuns às quatro páginas */
 :root{
   --bg:#f3f6f8; --surface:#ffffff; --surface2:#e9eef2; --ink:#13283a; --muted:#5d6e7b; --line:#d3dce4;
   --accent:#7b1e3c; --accent-ink:#ffffff; --accent-tint:#f3e3e8; --sea:#146c7a; --sea-tint:#dcedf0;
@@ -214,7 +214,7 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .welcome p{margin:0;font-size:15px;color:var(--ink)}
 .grp h2::after{content:"";display:block;width:34px;height:3px;border-radius:2px;background:var(--accent);opacity:.45;margin-top:5px}
 
-/* ---------- página do cliente — estilo do menu impresso ---------- */
+/* ---------- página do cliente - estilo do menu impresso ---------- */
 @media (prefers-color-scheme: light){
   body.cliente{--bg:#f4edde;--surface:#fbf6ea;--surface2:#eee4cf;--ink:#43301f;--muted:#8a7963;--line:#e3d6ba;--accent:#8c1f32;--accent-tint:#f1dfd2;--sea:#14616e;--sea-tint:#e2eae0;--shadow:0 1px 2px rgba(67,48,31,.08),0 6px 18px rgba(67,48,31,.09)}
 }
