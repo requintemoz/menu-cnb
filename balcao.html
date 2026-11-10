@@ -8,9 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261109d">
-<script src="config.js?v=20261109d"></script>
-<script src="comum.js?v=20261109d"></script>
+<link rel="stylesheet" href="estilos.css?v=20261110b">
+<script src="lib/supabase.js"></script>
+<script src="config.js?v=20261110b"></script>
+<script src="comum.js?v=20261110b"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Ecrã do balcão</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num"></span> <span id="b-who" class="muted"></span> <button type="button" id="b-exit">Sair</button></div></header>
@@ -40,7 +41,7 @@
   const { api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
   let S = null, token = null, user = null, sel = new Set(), pincel = null, pintando = false, gravT = null, gravando = false; const pend = new Map(); foraAntes = 0, chVistas = null, supVistas = null; const off = offlineBar(); armarSom();
   setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
-  function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('b-who').textContent = user.nome; load(); setInterval(load, CNB.POLL_STAFF_MS); }
+  function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('b-who').textContent = user.nome; load(); setInterval(load, CNB.POLL_STAFF_MS); U.tempoReal(load); }
   const saved = sess.get(); if (saved) start(saved); else loginUI(['caixa', 'supervisor', 'gerente'], start);
   document.getElementById('b-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
   const nome = id => (S && S.nomes[id]) || id || '-';

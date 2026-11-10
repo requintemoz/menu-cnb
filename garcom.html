@@ -8,9 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261109d">
-<script src="config.js?v=20261109d"></script>
-<script src="comum.js?v=20261109d"></script>
+<link rel="stylesheet" href="estilos.css?v=20261110b">
+<script src="lib/supabase.js"></script>
+<script src="config.js?v=20261110b"></script>
+<script src="comum.js?v=20261110b"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 </head>
 <body>
@@ -30,7 +31,7 @@
   const { api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
   let S = null, user = null, token = null, lastIds = new Set(), timer = null; const off = offlineBar(); armarSom();
   setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
-  function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('g-nfc').hidden = false; document.getElementById('g-name').textContent = user.nome; load(); timer = setInterval(load, CNB.POLL_STAFF_MS); nfcStart(); }
+  function start(s) { token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('g-nfc').hidden = false; document.getElementById('g-name').textContent = user.nome; load(); timer = setInterval(load, CNB.POLL_STAFF_MS); U.tempoReal(load); nfcStart(); }
   const saved = sess.get(); if (saved) start(saved); else loginUI(['garcom', 'caixa', 'supervisor', 'gerente'], start);
   document.getElementById('g-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
   document.getElementById('g-refresh').addEventListener('click', load);
