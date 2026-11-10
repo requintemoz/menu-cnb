@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110c">
+<link rel="stylesheet" href="estilos.css?v=20261110d">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110c"></script>
-<script src="comum.js?v=20261110c"></script>
+<script src="config.js?v=20261110d"></script>
+<script src="comum.js?v=20261110d"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 </head>
 <body>
@@ -72,7 +72,7 @@
     const grp = agrupar(p.linhas);
     openSheet(`<div class="detail"><span class="eyebrow">Mesa ${esc(p.mesa)}, ${p.id}, ${hhmm(p.t0)}</span><h3>${p.t2 ? 'Entregar à mesa' : 'Lançar no Loyverse'}</h3>
       <div class="timeline"><div class="on"><b>t0 ${hhmm(p.t0)}</b>Pedido</div><div class="${p.t1 ? 'on' : ''}"><b>t1 ${hhmm(p.t1)}</b>Recebido</div><div class="${p.t2 ? 'on' : ''}"><b>t2 ${hhmm(p.t2)}</b>Registado</div><div><b>t3 -</b>Entregue</div></div>
-      <div class="lv-list">${Object.entries(grp).map(([c, ls]) => `<div class="lv-cat">${esc(c)}</div>${ls.map(l => { const ob = temObs(l) && !l.indisponivel; return `<div class="lv-line${ob ? ' obs' : ''}"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${ob ? `<div>${chips(l)}</div>` : (l.variante ? `<div class="mod">${esc(l.variante)}</div>` : '')}${l.nota ? `<div class="note">Nota do cliente: "${esc(l.nota)}" <button class="btn sm ghost" type="button" data-copy="${esc(l.nota)}">copiar</button></div>` : ''}<div class="row" style="margin-top:6px;gap:8px">${ob && !p.t2 ? `<label class="reg-chk"><input type="checkbox" data-chk="1"> lançado com as opções</label>` : ''}${l.indisponivel ? '<span class="pill crit">indisponível</span>' : `<button class="btn sm ghost" type="button" data-ind="${l._row}" style="font-size:12px">esgotado</button>`}</div></div></div>`; }).join('')}`).join('')}</div>
+      <div class="lv-list">${Object.entries(grp).map(([c, ls]) => `<div class="lv-cat">${esc(c)}</div>${ls.map(l => { const ob = temObs(l) && !l.indisponivel; return `<div class="lv-line${ob ? ' obs' : ''}"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${l.sku ? ` <span class="sku num" title="SKU no Loyverse">SKU ${esc(l.sku)}</span>` : ''}${ob ? `<div>${chips(l)}</div>` : (l.variante ? `<div class="mod">${esc(l.variante)}</div>` : '')}${l.nota ? `<div class="note">Nota do cliente: "${esc(l.nota)}" <button class="btn sm ghost" type="button" data-copy="${esc(l.nota)}">copiar</button></div>` : ''}<div class="row" style="margin-top:6px;gap:8px">${ob && !p.t2 ? `<label class="reg-chk"><input type="checkbox" data-chk="1"> lançado com as opções</label>` : ''}${l.indisponivel ? '<span class="pill crit">indisponível</span>' : `<button class="btn sm ghost" type="button" data-ind="${l._row}" style="font-size:12px">esgotado</button>`}</div></div></div>`; }).join('')}`).join('')}</div>
       <div class="actions">${p.t2 ? `<button class="btn sea" id="d-nfc" type="button">Ler NFC da mesa: entregue</button>` : `<button class="btn primary" id="d-reg" type="button">Registado no POS</button>`}<button class="btn" id="d-pass" type="button">Passar a colega</button><button class="btn ghost" id="d-anul" type="button">Anular...</button></div>
       <p class="muted" id="d-hint" style="font-size:12px;margin:10px 0 0">${p.t2 ? (S.modo === 'central' ? 'Pedido já lançado no Loyverse e atribuído a si. Confira as linhas a amarelo ao servir e, ao entregar, encoste o POS à etiqueta da mesa.' : 'Ao entregar, encoste o POS à etiqueta da mesa.') : (S.modo === 'central' ? 'Ninguém está a registar pedidos neste momento: lance este no Loyverse pela ordem acima, marque as linhas a amarelo e carregue em "Registado no POS".' : 'Lance os artigos no Loyverse pela ordem acima, marque as linhas a amarelo e só depois carregue em "Registado no POS".')}</p></div>`, r => {
       const chks = r.querySelectorAll('[data-chk]'); const regB = r.querySelector('#d-reg');

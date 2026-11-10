@@ -332,6 +332,7 @@ body.cliente .lk .ic{width:30px;height:30px;color:var(--accent)}
 .cartao.mini .barra{margin:10px 0 6px}
 .tbl-codes td.num{white-space:nowrap}
 a.btn{text-decoration:none;display:inline-block}
+a.btn:not(.primary){color:var(--ink)}
 
 /* Registo central e opções dos pratos (Nov 2026) */
 .lv-line.obs{background:var(--warn-tint);box-shadow:inset 4px 0 0 var(--warn)}
@@ -391,3 +392,6 @@ body.cliente .atalhos button .ic{width:30px;height:30px;color:var(--accent);stro
 .tb.pend{opacity:.75}
 #b-map.pintar .tb{touch-action:none;cursor:crosshair}
 #b-map.pintar{user-select:none;-webkit-user-select:none}
+
+/* SKU do Loyverse nas linhas do pedido (registo e garçom) */
+.sku{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:14px;letter-spacing:.3px;vertical-align:1px;white-space:nowrap}
