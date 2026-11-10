@@ -36,6 +36,20 @@
     try { const canal = sb.channel('menu-equipa'); ['menu_pedidos', 'menu_chamadas', 'menu_mesas', 'menu_supervisor', 'menu_turnos'].forEach(tb => canal.on('postgres_changes', { event: '*', schema: 'public', table: tb }, dispara)); canal.subscribe(); } catch (e) {}
     document.addEventListener('visibilitychange', () => { if (!document.hidden) dispara(); });
   }
+  // copiar texto (SKU, notas) para colar no Loyverse; com alternativa para browsers sem acesso à área de transferência
+  async function copiar(txt) {
+    txt = String(txt == null ? '' : txt);
+    try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(txt); return true; } } catch (e) {}
+    try { const t = document.createElement('textarea'); t.value = txt; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(t);
+      t.select(); t.setSelectionRange(0, txt.length); const ok = document.execCommand('copy'); t.remove(); return ok; } catch (e) { return false; }
+  }
+  // tocar num SKU copia o número
+  document.addEventListener('click', async e => {
+    const b = e.target.closest && e.target.closest('[data-sku]'); if (!b) return;
+    e.preventDefault(); const sku = b.dataset.sku;
+    if (await copiar(sku)) { b.classList.add('copiado'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('copiado'), 1500); toast('SKU ' + esc(sku) + ' copiado. Cole no Loyverse.', 1800); }
+    else toast('Não foi possível copiar. O SKU é ' + esc(sku) + '.', 4000);
+  });
   function toast(msg, ms) { const r = document.getElementById('toast-root'); r.innerHTML = `<div class="toast">${msg}</div>`; clearTimeout(toast.t); toast.t = setTimeout(() => r.innerHTML = '', ms || 2600); }
   function openSheet(html, after) { const r = document.getElementById('sheet-root'); r.innerHTML = `<div class="sheet-bg" id="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; document.getElementById('sheet-bg').addEventListener('click', e => { if (e.target.id === 'sheet-bg') closeSheet(); }); if (after) after(r); }
   function closeSheet() { document.getElementById('sheet-root').innerHTML = ''; }
@@ -59,5 +73,5 @@
   function armarSom() { document.addEventListener('pointerdown', () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }, { once: true }); }
   // indicador de ligação
   function offlineBar() { const el = document.createElement('div'); el.className = 'offline'; el.hidden = true; el.textContent = 'Sem ligação. A tentar de novo...'; document.body.appendChild(el); return { on() { el.hidden = false; }, off() { el.hidden = true; } }; }
-  window.U = { sb, tempoReal, api, toast, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, limpa, sess, loginUI, beep, armarSom, offlineBar };
+  window.U = { sb, tempoReal, api, toast, copiar, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, limpa, sess, loginUI, beep, armarSom, offlineBar };
 })();

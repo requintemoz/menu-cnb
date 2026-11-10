@@ -56,7 +56,7 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700}
 .pill.ok{background:var(--ok-tint);color:var(--ok)} .pill.warn{background:var(--warn-tint);color:var(--warn)} .pill.crit{background:var(--crit-tint);color:var(--crit)} .pill.sea{background:var(--sea-tint);color:var(--sea)} .pill.grey{background:var(--surface2);color:var(--muted)} .pill.acc{background:var(--accent-tint);color:var(--accent)}
 .empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bar);color:var(--bar-ink);padding:10px 16px;border-radius:999px;box-shadow:var(--shadow);z-index:40;font-weight:600;max-width:92vw;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bar);color:var(--bar-ink);padding:10px 16px;border-radius:999px;box-shadow:var(--shadow);z-index:60;font-weight:600;max-width:92vw;text-align:center}
 
 /* ---------- Cliente ---------- */
 .c-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
@@ -395,3 +395,6 @@ body.cliente .atalhos button .ic{width:30px;height:30px;color:var(--accent);stro
 
 /* SKU do Loyverse nas linhas do pedido (registo e garçom) */
 .sku{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:14px;letter-spacing:.3px;vertical-align:1px;white-space:nowrap}
+button.sku{font-family:inherit;line-height:1.3;min-height:30px;padding:3px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,border-color .15s}
+button.sku:hover,button.sku:focus-visible{border-color:var(--sea)}
+button.sku.copiado{background:var(--ok-tint);border-color:var(--ok);color:var(--ok)}

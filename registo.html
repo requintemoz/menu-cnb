@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110d">
+<link rel="stylesheet" href="estilos.css?v=20261110e">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110d"></script>
-<script src="comum.js?v=20261110d"></script>
+<script src="config.js?v=20261110e"></script>
+<script src="comum.js?v=20261110e"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Registo de pedidos</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num">--</span></div></header>
@@ -79,10 +79,10 @@
     const g0 = p.garcomMesa || '';
     const opG = S.garcons.map(g => `<option value="${esc(g.id)}" ${g.id === g0 ? 'selected' : ''}>${esc(g.nome)}${g.emTurno ? '' : ' (fora de turno)'}</option>`).join('');
     openSheet(`<div class="detail"><span class="eyebrow">Pedido ${esc(p.id)}, às ${hhmm(p.t0)}</span><h3>Mesa ${esc(p.mesaNome)}</h3>
-      <ol class="reg-passos"><li>No Loyverse, abra um ticket com o nome <b>Mesa ${esc(p.mesaNome)}</b>.</li><li>Lance os artigos por esta ordem. As linhas a amarelo têm opções ou notas: lance-as e marque cada uma.</li><li>Guarde o ticket e atribua-o ao garçom escolhido abaixo.</li></ol>
+      <ol class="reg-passos"><li>No Loyverse, abra um ticket com o nome <b>Mesa ${esc(p.mesaNome)}</b>.</li><li>Lance os artigos por esta ordem. Toque no SKU para o copiar e cole-o na pesquisa do Loyverse. As linhas a amarelo têm opções ou notas: lance-as e marque cada uma.</li><li>Guarde o ticket e atribua-o ao garçom escolhido abaixo.</li></ol>
       <div class="lv-list">${Object.entries(grp).map(([c, ls]) => `<div class="lv-cat">${esc(c)}</div>${ls.map(l => {
         const i = p.linhas.indexOf(l); const ob = l.obs && !l.indisponivel;
-        return `<div class="lv-line${ob ? ' obs' : ''}"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${l.sku ? ` <span class="sku num" title="SKU no Loyverse">SKU ${esc(l.sku)}</span>` : ''}${ob ? `<div>${chips(l)}</div>` : (l.variante ? `<div class="mod">${esc(l.variante)}</div>` : '')}${l.nota ? `<div class="note">Nota do cliente: "${esc(l.nota)}"</div>` : ''}
+        return `<div class="lv-line${ob ? ' obs' : ''}"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${l.sku ? ` <button type="button" class="sku num" data-sku="${esc(l.sku)}" title="Tocar para copiar" aria-label="Copiar SKU ${esc(l.sku)}">SKU ${esc(l.sku)}</button>` : ''}${ob ? `<div>${chips(l)}</div>` : (l.variante ? `<div class="mod">${esc(l.variante)}</div>` : '')}${l.nota ? `<div class="note">Nota do cliente: "${esc(l.nota)}"</div>` : ''}
           <div class="row" style="margin-top:6px;gap:8px">${ob ? `<label class="reg-chk"><input type="checkbox" data-chk="${i}"> lançado com as opções</label>` : ''}${l.indisponivel ? '<span class="pill crit">esgotado</span>' : `<button class="btn sm ghost" type="button" data-ind="${l._row}" style="font-size:12px">esgotado</button>`}</div></div></div>`;
       }).join('')}`).join('')}</div>
       <label class="eyebrow" for="r-garcom" style="display:block;margin-top:12px">Ticket atribuído a</label>
