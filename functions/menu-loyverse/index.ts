@@ -2,6 +2,8 @@
 //  accao "sincronizar" (de 10 em 10 min pelo pg_cron, ou pela gestão): artigos, categorias, modificadores e stock da loja
 //  accao "cruzar" (23:45, ou pela gestão): confere os pedidos da app com os recibos do Loyverse
 //  accao "lojas" (gestão): lista as lojas
+//  accao "pagamentos" (de 2 em 2 min pelo pg_cron, só quando há mesas a pedir pelo telemóvel): procura nos recibos do Loyverse
+//    o pagamento de cada uma dessas mesas (ticket "Mesa N") e liberta a mesa para o cliente seguinte. {"ver": true} só mostra.
 // Segredo necessário: LOYVERSE_TOKEN (supabase secrets set LOYVERSE_TOKEN=...).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -89,6 +91,37 @@ async function cruzar(db: any, diaPedido?: string) {
   return { dia, pedidos: out.length, ok: out.filter((x) => x.resultado === "ok").length };
 }
 
+// pagamento no Loyverse liberta o telemóvel da mesa (o ticket tem o nome "Mesa N")
+const semAcento = (s: string) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+function ticketDaMesa(ticket: string, mesa: { mesa: string; nome: string }) {
+  const t = semAcento(ticket), n = semAcento(mesa.nome); if (!t || !n) return false;
+  const num = n.replace(/^0+/, "");
+  return t === n || t === semAcento(mesa.mesa) || new RegExp("^(mesa|m)\\s*0*" + num.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![0-9])").test(t);
+}
+async function pagamentos(db: any, ver: boolean) {
+  const { data: mesas, error } = await db.rpc("menu_telemoveis_json", { p_garcom: null });
+  if (error) throw new Error(error.message);
+  const lista = (mesas || []) as { mesa: string; nome: string; desde: string }[];
+  if (!lista.length && !ver) return { mesas: 0, libertadas: [] };
+  const { data: cfgRows } = await db.from("menu_config").select("chave, valor");
+  const c: Record<string, string> = {}; (cfgRows || []).forEach((r: any) => c[r.chave] = r.valor);
+  const inicio = lista.length ? Math.min(...lista.map((m) => Date.parse(m.desde))) - 10 * 60000 : Date.now() - 6 * 3600000;
+  const recibos = await lvAll("receipts", "receipts", { created_at_min: new Date(inicio).toISOString(), ...(c.loyverse_store_id ? { store_id: c.loyverse_store_id } : {}) });
+  const vendas = recibos.filter((r: any) => (r.receipt_type || "SALE") === "SALE" && !r.cancelled_at);
+  const libertadas: any[] = [];
+  for (const m of lista) {
+    const r = vendas.find((x: any) => ticketDaMesa(x.order || "", m) && Date.parse(x.receipt_date || x.created_at) >= Date.parse(m.desde));
+    if (!r) continue;
+    let ok = true;
+    if (!ver) { const { data, error: e2 } = await db.rpc("menu_pagamento_libertar", { p_mesa: m.mesa, p_pago: r.receipt_date || r.created_at, p_recibo: r.receipt_number }); if (e2) throw new Error(e2.message); ok = !!data; }
+    if (ok) libertadas.push({ mesa: m.mesa, recibo: r.receipt_number, pago: r.receipt_date });
+  }
+  const out: any = { mesas: lista.length, recibos: vendas.length, libertadas };
+  if (ver) out.amostra = vendas.slice(0, 20).map((r: any) => ({ recibo: r.receipt_number, data: r.receipt_date, ticket: r.order ?? null, servico: r.dining_option ?? null }));
+  if (ver && vendas[0]) out.campos = Object.keys(vendas[0]).join(", ");
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const url = Deno.env.get("SUPABASE_URL")!, chave = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -110,6 +143,7 @@ Deno.serve(async (req) => {
   const db = createClient(url, chave, { auth: { persistSession: false } });
   try {
     if (accao === "lojas") return json({ ok: true, data: (await lvGet("stores")).stores.map((s: any) => ({ id: s.id, nome: s.name })) });
+    if (accao === "pagamentos") return json({ ok: true, data: await pagamentos(db, !!corpo.ver) });
     if (accao === "cruzar") return json({ ok: true, data: await cruzar(db, corpo.dia) });
     return json({ ok: true, data: await sincronizar(db) });
   } catch (e) { return json({ ok: false, erro: String((e as Error).message || e) }, 500); }
