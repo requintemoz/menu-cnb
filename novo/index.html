@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110f">
-<script src="config.js?v=20261110f"></script>
-<script src="comum.js?v=20261110f"></script>
-<script src="traducoes.js?v=20261110f"></script>
+<link rel="stylesheet" href="estilos.css?v=20261110g">
+<script src="config.js?v=20261110g"></script>
+<script src="comum.js?v=20261110g"></script>
+<script src="traducoes.js?v=20261110g"></script>
 </head>
 <body class="cliente">
 <svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -105,8 +105,8 @@
   const catN = i => L === 'en' ? (i.cat_en || tx(i.catNome)) : i.catNome;
   const modsTx = ms => (ms || []).map(m => { const k = String(m).indexOf(': '); return k > 0 ? tx(m.slice(0, k)) + ': ' + tx(m.slice(k + 2)) : tx(m); });
   const boas = () => exT(M.textos || {}, 'boas_vindas') || '';
-  // fotografias: aceita links de partilha do Google Drive e converte para imagem directa
-  const fotoSrc = (u, w) => { const m = String(u || '').match(/[-\w]{25,}/); return m && /drive\.google/.test(u) ? 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000) : u; };
+  // fotografias: links do Google Drive passam a imagem directa; as guardadas no Supabase têm miniatura (-mini.jpg) para as listas
+  const fotoSrc = (u, w) => { u = String(u || ''); const m = u.match(/[-\w]{25,}/); if (m && /drive\.google/.test(u)) return 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000); if (w && w <= 400 && /\/storage\/v1\/object\/public\/menu-fotos\/.+\.jpg$/.test(u) && !/-mini\.jpg$/.test(u)) return u.replace(/\.jpg$/, '-mini.jpg'); return u; };
   // ícones das secções, ao estilo do menu impresso
   const icone = n => { n = String(n).toLowerCase();
     if (/começar/.test(n)) return 'sopa'; if (/petisco/.test(n)) return 'petisco'; if (/\bmar\b|marisco/.test(n)) return 'peixe';

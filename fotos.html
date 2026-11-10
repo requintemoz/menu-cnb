@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110f">
+<link rel="stylesheet" href="estilos.css?v=20261110g">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110f"></script>
-<script src="comum.js?v=20261110f"></script>
+<script src="config.js?v=20261110g"></script>
+<script src="comum.js?v=20261110g"></script>
 <style>
   .f-wrap{max-width:760px;margin:0 auto}
   .ajuda{padding:12px 14px;margin-bottom:12px}
@@ -41,6 +41,14 @@
   .f-estado{min-height:22px;font-size:14px;margin:0 0 10px;font-weight:600}
   .f-estado.ok{color:var(--ok)}
   .f-estado.crit{color:var(--crit)}
+  .f-estado.warn{color:var(--warn)}
+  .f-fonte{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+  .f-file{position:relative;flex:1 1 150px;text-align:center;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:center}
+  .f-file input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+  .f-file:focus-within{outline:2px solid var(--sea);outline-offset:2px}
+  .f-link{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px}
+  .f-link summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--sea)}
+  .f-link[open] summary{margin-bottom:8px}
   .f-campo{display:block;font-weight:600;font-size:14px}
   .f-campo input{width:100%;margin-top:4px;min-height:46px}
   .f-acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -56,11 +64,11 @@
     <details class="card ajuda" id="f-ajuda">
       <summary>Como pôr uma fotografia</summary>
       <ol>
-        <li>Guarde a fotografia na pasta das fotografias do menu no Google Drive.</li>
-        <li>No Drive, abra os três pontos da fotografia, escolha <b>Partilhar</b> e, em Acesso geral, <b>Qualquer pessoa com o link</b>. Depois toque em <b>Copiar link</b>.</li>
-        <li>Aqui, toque no artigo, cole o link e confirme que a fotografia aparece. Depois toque em <b>Guardar</b>.</li>
+        <li>Toque no artigo.</li>
+        <li>Toque em <b>Tirar fotografia</b> para usar a câmara, ou em <b>Escolher da galeria</b> para uma fotografia já tirada.</li>
+        <li>Confira a fotografia e toque em <b>Guardar</b>. Aparece logo no menu dos clientes.</li>
       </ol>
-      <p class="muted">Boas fotografias: na horizontal, com boa luz, o prato ao centro e sem pessoas. A fotografia aparece logo no menu dos clientes.</p>
+      <p class="muted">Boas fotografias: na horizontal, com boa luz, o prato ao centro e sem pessoas. Também pode colar um link do Google Drive, desde que a fotografia esteja partilhada como "Qualquer pessoa com o link".</p>
     </details>
     <div class="f-prog"><span id="f-conta" class="muted"></span><div class="f-bar"><i id="f-barra"></i></div></div>
     <div class="f-filtros">
@@ -83,8 +91,8 @@
     if (!PERFIS.includes(s.user.perfil)) { toast('Esta página é para quem trata das fotografias do menu.', 5000); sess.clear(); loginUI(PERFIS, start); return; }
     token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false;
     document.getElementById('f-nome').textContent = user.nome; document.getElementById('f-outras').hidden = user.perfil === 'fotos';
-    const aj = document.getElementById('f-ajuda'); let fechada = false; try { fechada = localStorage.getItem('cnb-fotos-ajuda') === 'fechada'; } catch (e) {}
-    aj.open = !fechada; aj.addEventListener('toggle', () => { try { localStorage.setItem('cnb-fotos-ajuda', aj.open ? 'aberta' : 'fechada'); } catch (e) {} });
+    const aj = document.getElementById('f-ajuda'); let fechada = false; try { fechada = localStorage.getItem('cnb-fotos-ajuda2') === 'fechada'; } catch (e) {}
+    aj.open = !fechada; aj.addEventListener('toggle', () => { try { localStorage.setItem('cnb-fotos-ajuda2', aj.open ? 'aberta' : 'fechada'); } catch (e) {} });
     load();
   }
   const saved = sess.get(); if (saved) start(saved); else loginUI(PERFIS, start);
@@ -126,28 +134,69 @@
     el.querySelectorAll('[data-id]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.id)));
   }
 
+  // fotografia do telemóvel: reduzida aqui antes de enviar (JPEG até 1200 px para o menu e até 400 px para as listas)
+  function carregarImagem(ficheiro) {
+    return new Promise((ok, falha) => { const url = URL.createObjectURL(ficheiro); const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); ok(img); }; img.onerror = () => { URL.revokeObjectURL(url); falha(new Error('Não foi possível abrir esta fotografia. Experimente outra ou tire uma nova.')); }; img.src = url; });
+  }
+  function reduzir(img, max, q) {
+    return new Promise((ok, falha) => { const w0 = img.naturalWidth, h0 = img.naturalHeight, f = Math.min(1, max / Math.max(w0, h0)); const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w0 * f)); c.height = Math.max(1, Math.round(h0 * f)); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? ok(b) : falha(new Error('Não foi possível preparar a fotografia.')), 'image/jpeg', q); });
+  }
+  async function enviarFicheiros(it, grande, mini) {
+    const st = U.sb.storage.from('menu-fotos'); const base = 'artigos/' + (String(it.id).replace(/[^\w-]/g, '') || 'artigo') + '-' + Date.now().toString(36);
+    const op = { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false };
+    const erro = e => new Error(/security|policy|row-level|Unauthorized|403/i.test((e && (e.message || e.error)) || '') ? 'Sem permissão para enviar fotografias. Entre de novo com o PIN.' : 'Não foi possível enviar a fotografia. Verifique a internet e tente de novo.');
+    let r = await st.upload(base + '-mini.jpg', mini, op); if (r.error) throw erro(r.error);
+    r = await st.upload(base + '.jpg', grande, op); if (r.error) throw erro(r.error);
+    return st.getPublicUrl(base + '.jpg').data.publicUrl;
+  }
+  const kb = b => Math.max(1, Math.round(b.size / 1024)) + ' KB';
+
   function abrir(id) {
     const it = itens.find(i => i.id === id); if (!it) return;
+    const linkDrive = /drive\.google/.test(it.foto || '');
     openSheet(`<span class="eyebrow">${esc(it.seccao)}</span><h3>${esc(it.nome)}</h3>
       <div class="f-prev" id="f-prev">Sem fotografia</div><p class="f-estado" id="f-estado" role="status"></p>
-      <label class="f-campo">Link da fotografia<input id="f-url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://drive.google.com/file/d/..."></label>
-      <div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" type="button" id="f-colar">Colar link</button><button class="btn sm ghost" type="button" id="f-limpar">Limpar</button></div>
+      <div class="f-fonte"><label class="btn primary f-file">Tirar fotografia<input type="file" accept="image/*" capture="environment" id="f-camara"></label><label class="btn f-file">Escolher da galeria<input type="file" accept="image/*" id="f-galeria"></label></div>
+      <details class="f-link" id="f-linkbox"${linkDrive ? ' open' : ''}><summary>Ou colar um link do Google Drive</summary>
+        <label class="f-campo">Link da fotografia<input id="f-url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://drive.google.com/file/d/..."></label>
+        <div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" type="button" id="f-colar">Colar link</button><button class="btn sm ghost" type="button" id="f-limpar">Limpar</button></div></details>
       <div class="f-acoes"><button class="btn primary" type="button" id="f-guardar" disabled>Guardar</button><button class="btn" type="button" id="f-seguinte" disabled>Guardar e seguinte</button>${it.foto ? '<button class="btn ghost" type="button" id="f-remover">Remover fotografia</button>' : ''}<button class="btn ghost" type="button" id="f-fechar">Fechar</button></div>`, () => {
       const inp = document.getElementById('f-url'), prev = document.getElementById('f-prev'), est = document.getElementById('f-estado');
-      const bG = document.getElementById('f-guardar'), bS = document.getElementById('f-seguinte'); let vez = 0, t = null, valido = false;
+      const bG = document.getElementById('f-guardar'), bS = document.getElementById('f-seguinte'); let vez = 0, t = null, pendente = null, aEnviar = false;
       const estado = (txt, cls) => { est.textContent = txt; est.className = 'f-estado' + (cls ? ' ' + cls : ''); };
-      const pode = v => { valido = v; bG.disabled = !v; bS.disabled = !v; };
+      const cam = document.getElementById('f-camara').parentNode;
+      const pode = p => { pendente = p; bG.disabled = bS.disabled = !p || aEnviar; cam.classList.toggle('primary', !p); };
+      const mostra = src => { const img = new Image(); img.alt = ''; img.src = src; prev.className = 'f-prev tem'; prev.innerHTML = ''; prev.appendChild(img); };
+      const vazio = txt => { prev.className = 'f-prev'; prev.textContent = txt; };
+      function actual() { if (it.foto) { mostra(fotoSrc(it.foto, 1000)); estado('Fotografia actual. Para trocar, tire outra ou escolha da galeria.'); } else { vazio('Sem fotografia'); estado('Tire a fotografia ou escolha uma da galeria.'); } }
+      // fotografia da câmara ou da galeria
+      async function ficheiro(inpF) {
+        const f = inpF.files && inpF.files[0]; inpF.value = ''; if (!f) return;
+        const minha = ++vez; pode(null); inp.value = ''; estado('A preparar a fotografia...');
+        try {
+          const img = await carregarImagem(f); const grande = await reduzir(img, 1200, 0.82), mini = await reduzir(img, 400, 0.75); if (minha !== vez) return;
+          mostra(URL.createObjectURL(grande)); const vertical = img.naturalHeight > img.naturalWidth * 1.1;
+          estado(vertical ? 'A fotografia está na vertical e no menu aparece cortada, como acima. Se puder, tire-a na horizontal.' : 'Fotografia pronta (' + kb(grande) + '). Assim aparece no menu.', vertical ? 'warn' : 'ok');
+          pode({ tipo: 'ficheiro', grande, mini });
+        } catch (e) { if (minha !== vez) return; vazio('A fotografia não abriu'); estado(e.message, 'crit'); }
+      }
+      document.getElementById('f-camara').addEventListener('change', e => ficheiro(e.target));
+      document.getElementById('f-galeria').addEventListener('change', e => ficheiro(e.target));
+      // link do Google Drive (ou outro endereço de imagem)
       function verificar() {
-        const u = inp.value.trim(); const minha = ++vez; pode(false);
-        if (!u) { prev.className = 'f-prev'; prev.textContent = it.foto ? 'Cole o novo link' : 'Sem fotografia'; estado(it.foto ? '' : 'Cole o link da fotografia.'); return; }
-        if (!/^https:\/\/\S+$/i.test(u)) { prev.className = 'f-prev'; prev.textContent = 'Link inválido'; estado('O link tem de começar por https:// e não pode ter espaços.', 'crit'); return; }
+        const u = inp.value.trim(); const minha = ++vez; pode(null);
+        if (!u) { actual(); return; }
+        if (!/^https:\/\/\S+$/i.test(u)) { vazio('Link inválido'); estado('O link tem de começar por https:// e não pode ter espaços.', 'crit'); return; }
         estado('A verificar a fotografia...'); const img = new Image();
-        img.onload = () => { if (minha !== vez) return; prev.className = 'f-prev tem'; prev.innerHTML = ''; img.alt = ''; prev.appendChild(img); estado(u === it.foto ? 'Esta é a fotografia actual.' : 'A fotografia abre bem. Assim aparece no menu.', 'ok'); pode(u !== it.foto); };
-        img.onerror = () => { if (minha !== vez) return; prev.className = 'f-prev'; prev.textContent = 'A fotografia não abre'; estado(/drive\.google/.test(u) ? 'Este link não abre como fotografia. No Drive, confirme que a partilha está em "Qualquer pessoa com o link".' : 'Este link não abre como fotografia. Use o link de partilha do Google Drive.', 'crit'); };
+        img.onload = () => { if (minha !== vez) return; mostra(img.src); if (u === it.foto) { estado('Esta é a fotografia actual.', 'ok'); return; } estado('A fotografia abre bem. Assim aparece no menu.', 'ok'); pode({ tipo: 'link', valor: u }); };
+        img.onerror = () => { if (minha !== vez) return; vazio('A fotografia não abre'); estado(/drive\.google/.test(u) ? 'Este link não abre como fotografia. No Drive, confirme que a partilha está em "Qualquer pessoa com o link".' : 'Este link não abre como fotografia. Use o link de partilha do Google Drive.', 'crit'); };
         img.src = fotoSrc(u, 1000);
       }
       inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(verificar, 350); });
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter' && valido) guardar(false); });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter' && pendente) guardar(false); });
       document.getElementById('f-colar').addEventListener('click', async () => {
         try { const txt = await navigator.clipboard.readText(); if (!txt) throw new Error('vazio'); inp.value = txt.trim(); verificar(); }
         catch (e) { inp.focus(); toast('Toque longo na caixa do link e escolha Colar.', 3500); }
@@ -160,16 +209,16 @@
         rem.disabled = true; try { aplicar(await api('fotoGuardar', token, it.id, '')); closeSheet(); toast('Fotografia removida.'); } catch (e) { rem.disabled = false; toast(esc(e.message), 4000); }
       });
       async function guardar(seguinte) {
-        if (!valido) return; const ordem = visiveis(); const pos = ordem.findIndex(i => i.id === it.id);
-        bG.disabled = bS.disabled = true;
-        try { aplicar(await api('fotoGuardar', token, it.id, inp.value.trim())); }
-        catch (e) { bG.disabled = bS.disabled = false; toast(esc(e.message), 4000); return; }
+        if (!pendente || aEnviar) return; const p = pendente; const ordem = visiveis(); const pos = ordem.findIndex(i => i.id === it.id);
+        aEnviar = true; bG.disabled = bS.disabled = true; if (p.tipo === 'ficheiro') estado('A enviar a fotografia...');
+        try { const url = p.tipo === 'ficheiro' ? await enviarFicheiros(it, p.grande, p.mini) : p.valor; aplicar(await api('fotoGuardar', token, it.id, url)); }
+        catch (e) { aEnviar = false; pode(p); estado(e.message, 'crit'); return; }
         if (!seguinte) { closeSheet(); toast('Fotografia guardada. Já aparece no menu.'); return; }
         const prox = ordem.slice(pos + 1).find(i => !itens.find(x => x.id === i.id).foto);
         if (prox) { toast('Fotografia guardada.'); abrir(prox.id); } else { closeSheet(); toast('Fotografia guardada. Não há mais artigos sem fotografia nesta lista.', 4000); }
       }
       bG.addEventListener('click', () => guardar(false)); bS.addEventListener('click', () => guardar(true));
-      if (it.foto) { inp.value = it.foto; verificar(); } else { estado('Cole o link da fotografia.'); }
+      if (linkDrive) { inp.value = it.foto; verificar(); } else actual();
     });
   }
   function aplicar(r) { const i = itens.find(x => x.id === r.id); if (i) { i.foto = r.foto; i.por = r.por; i.em = r.em; } render(); }
