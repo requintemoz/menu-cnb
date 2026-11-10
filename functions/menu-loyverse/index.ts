@@ -98,9 +98,13 @@ Deno.serve(async (req) => {
   // o cron entra com a chave de serviço; as pessoas só se forem da gestão
   if (auth !== "Bearer " + chave) {
     const eu = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
-    const { data: perfil } = await eu.rpc("fn_menu_perfil");
-    const pode = accao === "lojas" ? ["gerente"] : ["gerente", "supervisor"];
-    if (!pode.includes(perfil)) return json({ ok: false, erro: "Sem permissão" }, 403);
+    // chave de serviço guardada no Vault (cron): só ela consegue ler menu_cruzamento
+    const servico = auth.startsWith("Bearer ") && !(await eu.from("menu_cruzamento").select("id").limit(1)).error;
+    if (!servico) {
+      const { data: perfil } = await eu.rpc("fn_menu_perfil");
+      const pode = accao === "lojas" ? ["gerente"] : ["gerente", "supervisor"];
+      if (!pode.includes(perfil)) return json({ ok: false, erro: "Sem permissão" }, 403);
+    }
   }
   if (!Deno.env.get("LOYVERSE_TOKEN")) return json({ ok: false, erro: "Falta o segredo LOYVERSE_TOKEN" }, 500);
   const db = createClient(url, chave, { auth: { persistSession: false } });
