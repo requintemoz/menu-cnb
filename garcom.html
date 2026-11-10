@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110i">
+<link rel="stylesheet" href="estilos.css?v=20261110j">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110i"></script>
-<script src="comum.js?v=20261110i"></script>
+<script src="config.js?v=20261110j"></script>
+<script src="comum.js?v=20261110j"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 </head>
 <body>
@@ -57,7 +57,7 @@
     document.querySelectorAll('[data-sup]').forEach(b => b.addEventListener('click', () => supervisor(b.dataset.sup)));
     // mesas a pedir pelo telemóvel: depois de fechar a conta, a mesa fica livre para o próximo cliente
     const tels = S.telemoveis || []; const gt = document.getElementById('g-tel');
-    gt.innerHTML = tels.length ? `<div class="row" style="margin:18px 0 8px"><span class="eyebrow">Mesas a pedir pelo telemóvel</span><span class="muted" style="font-size:12px">depois de fechar a conta, toque em "Conta fechada"</span></div><div class="list">${tels.map(x => `<div class="wi ok"><span class="mesa">${esc(x.nome)}</span><span><b>Desde as ${hhmm(x.desde)}</b><br><span class="sub">último movimento há ${Math.max(0, Math.round(mins(x.activa)))} min</span></span><button class="btn sm primary" type="button" data-tel="${esc(x.mesa)}">Conta fechada</button></div>`).join('')}</div>` : '';
+    gt.innerHTML = tels.length ? `<div class="row" style="margin:18px 0 8px"><span class="eyebrow">Mesas a pedir pelo telemóvel</span><span class="muted" style="font-size:12px">ficam livres sozinhas com o pagamento no Loyverse; "Conta fechada" liberta já</span></div><div class="list">${tels.map(x => `<div class="wi ok"><span class="mesa">${esc(x.nome)}</span><span><b>Desde as ${hhmm(x.desde)}</b><br><span class="sub">último movimento há ${Math.max(0, Math.round(mins(x.activa)))} min</span></span><button class="btn sm primary" type="button" data-tel="${esc(x.mesa)}">Conta fechada</button></div>`).join('')}</div>` : '';
     gt.querySelectorAll('[data-tel]').forEach(b => b.addEventListener('click', async () => { b.disabled = true; try { await api('gLibertarTelemovel', token, b.dataset.tel); toast('Conta fechada. A mesa fica livre para o próximo cliente.', 3500); load(); } catch (e) { b.disabled = false; toast(e.message); } }));
   }
   async function supervisor(id) {
