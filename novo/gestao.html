@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110j">
+<link rel="stylesheet" href="estilos.css?v=20261110k">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110j"></script>
-<script src="comum.js?v=20261110j"></script>
+<script src="config.js?v=20261110k"></script>
+<script src="comum.js?v=20261110k"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Gestão do menu digital</small></span></div><div class="clock" style="margin-left:auto"><span id="g-who" class="muted"></span> <button type="button" id="g-exit">Sair</button></div></header>
@@ -19,6 +19,12 @@
   <div id="login"></div>
   <div id="app" hidden>
     <div class="kpis" id="k"></div>
+    <div class="card" id="eq-card" style="padding:14px;margin-bottom:12px" hidden>
+      <div class="row" style="justify-content:space-between"><h2 class="section-title">Equipa</h2><button class="btn sm primary" id="eq-novo" type="button">Nova pessoa</button></div>
+      <p class="muted" style="margin:6px 0 8px;font-size:13px">Cada pessoa entra na página de entrada com o nome e o PIN (o mesmo do Loyverse). O perfil decide as páginas que abre. Só o gerente vê e altera esta lista.</p>
+      <div class="row" style="gap:10px;margin-bottom:8px;flex-wrap:wrap"><input id="eq-q" placeholder="Procurar nome" style="flex:1;min-width:160px" aria-label="Procurar nome"><label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="eq-inact"> Mostrar desactivadas</label></div>
+      <div style="overflow-x:auto"><table class="tbl-codes" id="eq-t"></table></div>
+    </div>
     <div class="card" style="padding:14px;margin-bottom:12px"><h2 class="section-title">Loyverse</h2><p class="muted" style="margin:0 0 8px;font-size:13px">O menu é lido do Loyverse a cada 10 minutos. Depois de mudar preços ou artigos, force a leitura aqui.</p><div class="row"><button class="btn primary" id="sinc" type="button">Actualizar menu agora</button><button class="btn" id="lojas" type="button">Ver lojas (ID)</button><button class="btn" id="cruzar" type="button">Correr o cruzamento de hoje</button></div><div id="sinc-out" class="muted" style="margin-top:8px;font-size:13px"></div></div>
     <div class="card" style="padding:14px;margin-bottom:12px"><div class="row" style="justify-content:space-between"><h2 class="section-title">Mesas: QR e NFC</h2><div class="row"><button class="btn" id="gerar" type="button">Gerar códigos em falta</button><button class="btn" id="imprimir" type="button">Folha de QR para imprimir</button></div></div><p class="muted" style="margin:6px 0;font-size:13px">Cada etiqueta NFC grava-se com o código da mesa a partir do POS: toque em "Gravar etiqueta" na linha da mesa, com a app do garçom aberta no mesmo aparelho (Chrome Android).</p><div style="overflow-x:auto"><table class="tbl-codes" id="mesas"></table></div><div id="print" class="print-grid" style="margin-top:12px"></div></div>
     <div class="card" style="padding:14px;margin-bottom:12px"><div class="row" style="justify-content:space-between"><h2 class="section-title">Destaques e promoções</h2><button class="btn sm" id="novo-d" type="button">Novo destaque</button></div><div style="overflow-x:auto"><table class="tbl-codes" id="dest"></table></div></div>
@@ -40,7 +46,7 @@
 (function () {
   const { api, toast, openSheet, closeSheet, fmt, hhmm, esc, sess, loginUI } = U;
   let D = null, token = null;
-  function start(s) { token = s.token; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('g-who').textContent = s.user.nome; load(); }
+  function start(s) { token = s.token; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('g-who').textContent = s.user.nome; load(); if (s.user.perfil === 'gerente') loadEquipa(); }
   const saved = sess.get(); if (saved) start(saved); else loginUI(['gerente', 'supervisor'], start);
   document.getElementById('g-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
   const hoje = new Date().toISOString().slice(0, 10); document.getElementById('r-ini').value = hoje; document.getElementById('r-fim').value = hoje;
@@ -57,6 +63,66 @@
     document.getElementById('cruz').innerHTML = '<tr><th>Data</th><th>Pedido</th><th>Mesa</th><th>Registou</th><th>Recibo</th><th>Resultado</th><th>Detalhe</th></tr>' + (D.cruzamento.length ? D.cruzamento.slice().reverse().map(c => `<tr><td>${esc(c.data)}</td><td>${esc(c.pedido)}</td><td>${esc(c.mesa)}</td><td>${esc(c.g2)}</td><td>${esc(c.recibo)}</td><td><span class="pill ${c.resultado === 'ok' ? 'ok' : 'crit'}">${esc(c.resultado)}</span></td><td style="font-size:12px">${esc(c.detalhe)}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">Ainda sem cruzamentos. Corre automaticamente às 23:45.</td></tr>');
     loadFid();
     document.getElementById('cfg').innerHTML = D.config.map(c => `<tr><td><b>${esc(c.chave)}</b></td><td>${esc(c.valor)}</td><td class="muted" style="font-size:12px">${esc(c.nota)}</td></tr>`).join('');
+  }
+  // ---------- Equipa (só o gerente) ----------
+  const PERFIS = [['garcom', 'Garçom', 'POS do garçom: pedidos e chamadas das suas mesas'], ['caixa', 'Caixa', 'Balcão e registo dos pedidos no Loyverse'],
+    ['registo', 'Registo', 'Só a página de registo no Loyverse'], ['supervisor', 'Supervisor', 'Balcão, POS, registo, fotografias e gestão (sem a equipa)'],
+    ['gerente', 'Gerente', 'Tudo, incluindo a equipa'], ['fotos', 'Fotografias', 'Só as fotografias do menu']];
+  const nomePerfil = p => (PERFIS.find(x => x[0] === p) || [p, p ? p : 'Sem acesso ao restaurante'])[1];
+  const dataHora = t => { if (!t) return ''; const d = new Date(t); return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }); };
+  let EQ = null;
+  async function loadEquipa() {
+    try { EQ = await api('equipaListar', token); } catch (e) { return; }
+    document.getElementById('eq-card').hidden = false; tabelaEquipa();
+  }
+  function estadoPessoa(p) {
+    if (!p.activo) return '<span class="pill grey">Desactivada</span>';
+    if (p.bloqueadoAte) return `<span class="pill crit">PIN bloqueado até ${hhmm(p.bloqueadoAte)}</span>`;
+    if (!p.temPin && !p.email) return '<span class="pill warn">Sem PIN</span>';
+    return '<span class="pill ok">Activa</span>';
+  }
+  function tabelaEquipa() {
+    const q = (document.getElementById('eq-q').value || '').toLowerCase().trim(), inact = document.getElementById('eq-inact').checked;
+    const lista = EQ.equipa.filter(p => (inact || p.activo) && (!q || p.nome.toLowerCase().includes(q)));
+    document.getElementById('eq-t').innerHTML = '<tr><th>Nome</th><th>Perfil no restaurante</th><th>Estado</th><th>Última entrada</th><th></th></tr>' + (lista.length ? lista.map(p => `<tr><td><b>${esc(p.nome)}</b>${p.id === EQ.eu ? ' <span class="muted" style="font-size:12px">(você)</span>' : ''}${p.bilhetes ? `<br><span class="muted" style="font-size:12px">Bilhetes: ${esc(p.bilhetes)}</span>` : ''}</td><td>${esc(nomePerfil(p.perfil))}</td><td>${estadoPessoa(p)}</td><td class="num">${p.ultimaEntrada ? dataHora(p.ultimaEntrada) : '<span class="muted">nunca</span>'}</td><td style="white-space:nowrap"><button class="btn sm" type="button" data-eq="${esc(p.id)}">Alterar</button>${p.bloqueadoAte ? ` <button class="btn sm" type="button" data-desb="${esc(p.id)}">Desbloquear</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">Ninguém com este nome.</td></tr>');
+    document.querySelectorAll('[data-eq]').forEach(b => b.addEventListener('click', () => formPessoa(EQ.equipa.find(p => p.id === b.dataset.eq))));
+    document.querySelectorAll('[data-desb]').forEach(b => b.addEventListener('click', async () => { b.disabled = true; try { await api('equipaDesbloquear', token, b.dataset.desb); toast('PIN desbloqueado. A pessoa já pode entrar.'); loadEquipa(); } catch (e) { b.disabled = false; toast(esc(e.message), 4000); } }));
+  }
+  document.getElementById('eq-q').addEventListener('input', () => { if (EQ) tabelaEquipa(); });
+  document.getElementById('eq-inact').addEventListener('change', () => { if (EQ) tabelaEquipa(); });
+  document.getElementById('eq-novo').addEventListener('click', () => formPessoa(null));
+  function formPessoa(p) {
+    const nova = !p; p = p || { nome: '', perfil: 'garcom', activo: true, historico: [] }; const eu = p.id === EQ.eu;
+    const opcoes = PERFIS.map(x => `<option value="${x[0]}"${p.perfil === x[0] ? ' selected' : ''}>${x[1]}</option>`).join('') + (!nova && (p.bilhetes || !p.perfil) ? `<option value=""${!p.perfil ? ' selected' : ''}>Sem acesso ao restaurante</option>` : '');
+    openSheet(`<h3>${nova ? 'Nova pessoa' : esc(p.nome)}</h3>
+      <div class="form">
+        <label>Nome (como aparece na lista da entrada)<input id="eq-nome" maxlength="40" autocomplete="off" value="${esc(p.nome)}"></label>
+        <label>Perfil no restaurante<select id="eq-perfil"${eu ? ' disabled' : ''}>${opcoes}</select></label>
+        <p class="muted" id="eq-perfil-txt" style="margin:-4px 0 4px;font-size:13px"></p>
+        <label>${nova ? 'PIN (4 a 6 algarismos, o mesmo do Loyverse)' : 'Novo PIN (deixe em branco para manter o actual)'}<input id="eq-pin" inputmode="numeric" maxlength="6" autocomplete="off" spellcheck="false" placeholder="${nova ? '' : 'manter o PIN actual'}"></label>
+        ${nova ? '' : `<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="eq-activo"${p.activo ? ' checked' : ''}${eu ? ' disabled' : ''}> Conta activa (pode entrar)</label>`}
+        ${!nova && p.bilhetes ? `<p class="muted" style="font-size:13px;margin:0">Esta pessoa também usa o sistema de bilhetes (perfil ${esc(p.bilhetes)}). Desactivar a conta tira-lhe o acesso aos dois sistemas.</p>` : ''}
+        ${eu ? '<p class="muted" style="font-size:13px;margin:0">Não pode mudar o seu próprio perfil nem desactivar a sua conta.</p>' : ''}
+      </div>
+      <div class="actions"><button class="btn primary" type="button" id="eq-ok">${nova ? 'Criar' : 'Guardar'}</button><button class="btn ghost" type="button" id="eq-x">Cancelar</button></div>
+      ${!nova && (p.historico || []).length ? `<h4 style="margin:16px 0 6px;font-size:14px">Últimas alterações</h4><ul style="margin:0;padding-left:18px;font-size:13px">${p.historico.map(h => `<li>${dataHora(h.quando)}${h.por ? ', ' + esc(h.por) : ''}: ${esc(h.accao)}</li>`).join('')}</ul>` : ''}`, r => {
+      const sel = r.querySelector('#eq-perfil'), txt = r.querySelector('#eq-perfil-txt');
+      const desc = () => { const x = PERFIS.find(y => y[0] === sel.value); txt.textContent = x ? x[2] : 'Não abre nenhuma página do restaurante.'; }; desc(); sel.addEventListener('change', desc);
+      r.querySelector('#eq-x').addEventListener('click', closeSheet);
+      const ok = r.querySelector('#eq-ok');
+      ok.addEventListener('click', async () => {
+        const nome = r.querySelector('#eq-nome').value.trim(), pin = r.querySelector('#eq-pin').value.trim();
+        if (nome.length < 2) { toast('Escreva o nome.'); return; }
+        if ((nova || pin) && !/^\d{4,6}$/.test(pin)) { toast('O PIN tem de ter 4 a 6 algarismos.'); return; }
+        const activo = nova ? true : r.querySelector('#eq-activo').checked;
+        if (!nova && p.activo && !activo && !ok.dataset.conf) { ok.dataset.conf = '1'; ok.textContent = 'Confirmar: desactivar ' + p.nome.split(' ')[0]; return; }
+        ok.disabled = true;
+        try {
+          const res = await api('equipaGuardar', token, { id: nova ? '' : p.id, nome, perfil: eu ? 'gerente' : sel.value, pin, activo });
+          closeSheet(); toast(nova ? nome + ' já pode entrar com o nome e o PIN.' : res.semAlteracoes ? 'Nada para alterar.' : 'Alterações guardadas.', 3500); loadEquipa();
+        } catch (e) { ok.disabled = false; toast(esc(e.message), 5000); }
+      });
+    });
   }
   // ---------- Cartão Requinte, avaliações e supervisor(a) ----------
   let FD = null, fFiltro = 'todos';
