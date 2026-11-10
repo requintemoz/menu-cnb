@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110k">
+<link rel="stylesheet" href="estilos.css?v=20261110l">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110k"></script>
-<script src="comum.js?v=20261110k"></script>
+<script src="config.js?v=20261110l"></script>
+<script src="comum.js?v=20261110l"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Ecrã do balcão</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num"></span> <span id="b-who" class="muted"></span> <button type="button" id="b-exit">Sair</button></div></header>
@@ -27,7 +27,7 @@
       <div class="b-lists">
         <div class="b-list sup" id="b-sup-wrap" hidden><h3>Supervisor(a) chamado(a) <span class="pill crit" id="b-n-sup">0</span></h3><div class="list" id="b-sup"></div></div>
         <div class="b-list"><h3>Pedidos por registar <span class="pill grey" id="b-n-ped">0</span></h3><div class="list" id="b-ped"></div></div>
-        <div class="b-list"><h3>Chamadas por atender <span class="pill grey" id="b-n-ch">0</span></h3><div class="list" id="b-ch"></div></div>
+        <div class="b-list"><h3 style="display:flex;align-items:center;gap:8px">Chamadas por atender <span class="pill grey" id="b-n-ch">0</span><button class="btn sm" type="button" id="b-ch-todas" style="margin-left:auto" hidden>Limpar todas</button></h3><div class="list" id="b-ch"></div></div>
         <div class="b-list"><h3>Contas pedidas <span class="pill grey" id="b-n-ct">0</span></h3><div class="list" id="b-ct"></div></div>
         <div class="b-list" id="b-tel-wrap" hidden><h3>Mesas a pedir pelo telemóvel <span class="pill grey" id="b-n-tel">0</span></h3><p class="muted" style="margin:0 0 8px;font-size:13px">Cada mesa fica livre sozinha até 2 minutos depois de a conta ser paga no Loyverse (ticket com o nome "Mesa N"). Para a libertar já, toque em "Conta fechada".</p><div class="list" id="b-tel"></div></div>
         <div class="b-list" id="b-fid-box" hidden><h3>Cartão Requinte</h3><div class="row" style="gap:6px"><input id="b-fid-q" placeholder="Celular ou nome do cliente" style="flex:1;min-width:0" inputmode="search"><button class="btn sm" id="b-fid-go" type="button">Procurar</button></div><div class="list" id="b-fid-r" style="margin-top:8px"></div></div>
@@ -46,6 +46,11 @@
   const saved = sess.get(); if (saved) start(saved); else loginUI(['caixa', 'supervisor', 'gerente'], start);
   document.getElementById('b-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
   const nome = id => (S && S.nomes[id]) || id || '-';
+  document.getElementById('b-ch-todas').addEventListener('click', async e => {
+    const b = e.currentTarget; const ids = JSON.parse(b.dataset.ids || '[]'); if (!ids.length) return;
+    if (!b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Confirmar: limpar ' + ids.length; return; }
+    b.disabled = true; try { const r = await api('bFecharChamadas', token, ids); toast(r.fechadas + ' chamadas resolvidas.', 3000); } catch (err) { toast(err.message); } b.disabled = false; load();
+  });
   async function load() {
     try { S = await api('bEstado', token); off.off(); } catch (e) { if (/Sessão|permissão/.test(e.message)) { sess.clear(); location.reload(); return; } off.on(); return; }
     pend.forEach((u, id) => { const x = S.mesas.find(y => y.id === id); if (x) x.garcom = u; }); // o que ainda não foi gravado prevalece
@@ -79,14 +84,21 @@
     bp.querySelectorAll('[data-cx]').forEach(b => b.addEventListener('click', async () => { try { await api('bVouRegistar', token, b.dataset.cx); toast('Saiu da lista do garçom. Lance no Loyverse e transfira o ticket para o garçom da mesa.', 4000); load(); } catch (e) { toast(e.message); } }));
     bp.querySelectorAll('[data-regcx]').forEach(b => b.addEventListener('click', async () => { try { await api('bRegistadoCaixa', token, b.dataset.regcx); toast('Registado pelo caixa.'); load(); } catch (e) { toast(e.message); } }));
     const outroTel = c => c.motivo === 'Pedir de outro telemóvel';
-    document.getElementById('b-ch').innerHTML = chs.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => line(c.mesa, c.c0, outroTel(c) ? 'Quer pedir de outro telemóvel' : esc(c.motivo), c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa])), L.chamada, outroTel(c) && (S.telemoveis || []).some(x => x.mesa === c.mesa) ? `<button class="btn sm" type="button" data-tel="${esc(c.mesa)}" data-telmsg="1">Libertar a mesa</button>` : '')).join('') || '<div class="empty">Nenhuma chamada</div>';
+    document.getElementById('b-ch').innerHTML = chs.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => line(c.mesa, c.c0, outroTel(c) ? 'Quer pedir de outro telemóvel' : esc(c.motivo), c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa])), L.chamada, (outroTel(c) && (S.telemoveis || []).some(x => x.mesa === c.mesa) ? `<button class="btn sm" type="button" data-tel="${esc(c.mesa)}" data-telmsg="1">Libertar a mesa</button><br>` : '') + `<button class="btn sm" type="button" data-fch="${esc(c.id)}">Resolvida</button>`)).join('') || '<div class="empty">Nenhuma chamada</div>';
+    const bTodas = document.getElementById('b-ch-todas'); bTodas.hidden = chs.length < 2; bTodas.textContent = 'Limpar todas'; delete bTodas.dataset.conf; bTodas.dataset.ids = JSON.stringify(chs.map(c => c.id));
     // mesas a pedir pelo telemóvel: "Conta fechada" deixa a mesa livre para o próximo cliente
     const tels = S.telemoveis || []; document.getElementById('b-tel-wrap').hidden = !tels.length; document.getElementById('b-n-tel').textContent = tels.length;
     document.getElementById('b-tel').innerHTML = tels.map(x => `<div class="wi ok"><span class="mesa">${esc(x.nome)}</span><span><b>Desde as ${hhmm(x.desde)}</b><br><span class="sub">garçom da mesa: ${esc(nome(x.garcom))}, último movimento há ${Math.max(0, Math.round(mins(x.activa)))} min</span></span><button class="btn sm primary" type="button" data-tel="${esc(x.mesa)}">Conta fechada</button></div>`).join('');
     document.querySelectorAll('[data-tel]').forEach(b => b.addEventListener('click', async () => { b.disabled = true; try { await api('gLibertarTelemovel', token, b.dataset.tel); toast(b.dataset.telmsg ? 'Mesa livre: o próximo telemóvel que pedir passa a ser o da mesa.' : 'Conta fechada. A mesa fica livre para o próximo cliente.', 3500); load(); } catch (e) { b.disabled = false; toast(e.message); } }));
     const bct = document.getElementById('b-ct');
-    bct.innerHTML = cts.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => { const f = F.contas && F.contas[c.id]; const fid = f ? `<span class="fid">Cartão Requinte: ${esc(f.nome)}${f.disponiveis.length ? ', brinde: ' + f.disponiveis.map(d => esc(d.brinde)).join(', ') : ''}</span>` : ''; const bt = f ? f.disponiveis.map(d => `<button class="btn sm primary" type="button" data-cli="${esc(f.id)}" data-chave="${esc(d.chave)}" data-brinde="${esc(d.brinde)}" data-nome="${esc(f.nome)}" data-mesa="${esc(c.mesa)}">Entregar brinde</button>`).join('<br>') : ''; return line(c.mesa, c.c0, 'Conta', (c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa]))) + fid, L.chamada, bt); }).join('') || '<div class="empty">Nenhuma conta pedida</div>';
+    bct.innerHTML = cts.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => { const f = F.contas && F.contas[c.id]; const fid = f ? `<span class="fid">Cartão Requinte: ${esc(f.nome)}${f.disponiveis.length ? ', brinde: ' + f.disponiveis.map(d => esc(d.brinde)).join(', ') : ''}</span>` : ''; const bt = f ? f.disponiveis.map(d => `<button class="btn sm primary" type="button" data-cli="${esc(f.id)}" data-chave="${esc(d.chave)}" data-brinde="${esc(d.brinde)}" data-nome="${esc(f.nome)}" data-mesa="${esc(c.mesa)}">Entregar brinde</button>`).join('<br>') : ''; const ent = `<button class="btn sm" type="button" data-fch="${esc(c.id)}" data-conta="1"${f && f.disponiveis.length ? ' data-brinde-pend="1"' : ''}>Conta entregue</button>`; return line(c.mesa, c.c0, 'Conta', (c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa]))) + fid, L.chamada, (bt ? bt + '<br>' : '') + ent); }).join('') || '<div class="empty">Nenhuma conta pedida</div>';
     bct.querySelectorAll('[data-chave]').forEach(b => b.addEventListener('click', () => entregar(b.dataset)));
+    // limpar chamadas e confirmar contas entregues
+    const fechar = async (ids, b, msg) => { b.disabled = true; try { await api('bFecharChamadas', token, ids); toast(msg, 3000); load(); } catch (e) { b.disabled = false; toast(e.message); } };
+    document.querySelectorAll('#b-ch [data-fch], #b-ct [data-fch]').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.brindePend && !b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Há brinde por entregar. Confirmar?'; return; }
+      fechar([b.dataset.fch], b, b.dataset.conta ? 'Conta entregue. A mesa fica livre para o próximo cliente.' : 'Chamada resolvida.');
+    }));
     document.getElementById('b-n-ped').textContent = ped.length; document.getElementById('b-n-ch').textContent = chs.length; document.getElementById('b-n-ct').textContent = cts.length;
     const f = v => v == null ? '-' : Number(v).toFixed(1);
     document.getElementById('b-rep').innerHTML = S.relatorio.linhas.filter(l => l.pedidos || l.chamadas || S.emTurno.some(t => t.id === l.id)).map(l => `<tr><td><b>${esc(l.nome)}</b></td><td class="num">${l.pedidos}${l.t2t0_fora ? ` <span class="pill crit">${l.t2t0_fora}</span>` : ''}</td><td class="num">${f(l.t2t0_med)}</td><td class="num">${f(l.t2t0_max)}</td><td class="num">${l.chamadas}${l.c1c0_fora ? ` <span class="pill crit">${l.c1c0_fora}</span>` : ''}</td><td class="num">${f(l.c1c0_med)}</td><td class="num">${l.semNfc}</td><td class="num">${l.deColegas}</td><td class="num">${l.sugMostradas ? l.sugAceites + '/' + l.sugMostradas : '-'}</td><td class="num">${l.horas}</td></tr>`).join('') || '<tr><td colspan="10" class="muted">Sem dados ainda.</td></tr>';
