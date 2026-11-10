@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13283a">
+<title>CNB | Registo de pedidos</title>
+<link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="estilos.css?v=20261110a">
+<script src="lib/supabase.js"></script>
+<script src="config.js?v=20261110a"></script>
+<script src="comum.js?v=20261110a"></script>
+</head>
+<body>
+<header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Registo de pedidos</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num">--</span></div></header>
+<section class="view wrap">
+  <div id="login"></div>
+  <div id="app" hidden>
+    <div class="g-head"><div><span class="eyebrow">Registo no Loyverse</span><br><span class="who" id="r-name">--</span> <span class="muted" id="r-hoje"></span></div><div class="row"><button class="btn sm" id="r-refresh" type="button">Actualizar</button><button class="btn sm ghost" id="r-exit" type="button">Sair</button></div></div>
+    <div class="reg-aviso" id="r-modo" hidden>O modo de registo central está desligado (Config: modo_registo). Os garçons continuam a lançar os seus pedidos; esta página serve de apoio.</div>
+    <div class="row" style="margin-bottom:8px"><span class="eyebrow">Fila</span><span class="muted" id="r-count"></span><span class="muted" id="r-quem" style="margin-left:auto;font-size:12px"></span></div>
+    <div class="list" id="r-list"></div>
+  </div>
+</section>
+<div id="sheet-root"></div><div id="toast-root"></div>
+<script>
+(function () {
+  const { api, toast, openSheet, closeSheet, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
+  const PERFIS = ['registo', 'caixa', 'supervisor', 'gerente'];
+  let S = null, user = null, token = null, lastIds = new Set(), aberto = null; const off = offlineBar(); armarSom();
+  setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
+  function start(s) {
+    if (!PERFIS.includes(s.user.perfil)) { toast('Esta página é para quem regista os pedidos (perfil registo, caixa, supervisor ou gerente).', 5000); sess.clear(); loginUI(PERFIS, start); return; }
+    token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('r-name').textContent = user.nome; load(); setInterval(load, CNB.POLL_STAFF_MS); U.tempoReal(load);
+  }
+  const saved = sess.get(); if (saved) start(saved); else loginUI(PERFIS, start);
+  document.getElementById('r-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
+  document.getElementById('r-refresh').addEventListener('click', load);
+
+  const nome = id => (S && S.nomes[id]) || id || '';
+  const lim = () => Number(S.limites.aceitar || 2) + Number(S.limites.registar || 5);
+  function chips(l) {
+    const out = [];
+    if (l.variante) out.push(`<span class="obs-tag">${esc(l.variante)}</span>`);
+    String(l.mods || '').split(', ').filter(Boolean).forEach(m => out.push(`<span class="obs-tag">${esc(m)}</span>`));
+    return out.join('');
+  }
+  async function load() {
+    try { S = await api('rFila', token); off.off(); } catch (e) { if (/Sessão/.test(e.message)) { sess.clear(); location.reload(); return; } if (/permissão/.test(e.message)) { toast(e.message); return; } off.on(); return; }
+    document.getElementById('r-modo').hidden = S.modo === 'central';
+    document.getElementById('r-hoje').textContent = '| registados hoje: ' + S.meusHoje;
+    const outros = S.registadores.filter(r => String(r.id) !== String(user.id)).map(r => r.nome);
+    document.getElementById('r-quem').textContent = outros.length ? 'Também a registar: ' + outros.join(', ') : '';
+    const ids = new Set(S.fila.map(p => p.id)); const novos = [...ids].filter(i => !lastIds.has(i));
+    if (lastIds.size && novos.length) { beep(2); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } lastIds = ids;
+    const comigo = S.fila.filter(p => p.regPor === String(user.id)).length;
+    document.getElementById('r-count').textContent = S.fila.length ? `${S.fila.length} por registar${comigo ? ', ' + comigo + ' consigo' : ''}` : 'fila vazia';
+    document.getElementById('r-list').innerHTML = S.fila.length ? S.fila.map(p => {
+      const m = mins(p.t0); const n = p.linhas.reduce((a, l) => a + Number(l.qtd), 0); const obs = p.linhas.filter(l => l.obs && !l.indisponivel).length;
+      const meu = p.regPor === String(user.id); const estado = p.regPor ? (meu ? '<span class="pill sea">consigo</span>' : `<span class="pill grey">com ${esc(p.regNome)}</span>`) : '<span class="pill acc">livre</span>';
+      return `<button class="wi ${nivel(m, lim())}" type="button" data-p="${esc(p.id)}"><span class="mesa">${esc(p.mesaNome)}</span><span><b>${n} artigo(s)</b> ${estado}${obs ? ` <span class="pill warn">${obs} com observações</span>` : ''}<br><span class="sub">${p.linhas.slice(0, 3).map(l => l.qtd + '× ' + esc(l.nome)).join(', ')}${p.linhas.length > 3 ? '...' : ''}</span><br><span class="sub">${p.garcomMesa ? 'garçom da mesa: ' + esc(nome(p.garcomMesa)) : 'mesa sem garçom atribuído'}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
+    }).join('') : '<div class="empty">Sem pedidos por registar. A página avisa com som quando chegar um novo.</div>';
+    document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.p)));
+    if (aberto && !S.fila.some(p => p.id === aberto)) { aberto = null; }
+  }
+  function agrupar(linhas) { // ordem das categorias do Loyverse, para lançar de cima para baixo
+    const ordem = S.ordemCategorias || []; const pos = c => { const i = ordem.indexOf(c); return i < 0 ? 999 : i; };
+    const out = {}; linhas.slice().sort((a, b) => pos(a.cat) - pos(b.cat) || String(a.nome).localeCompare(b.nome)).forEach(l => (out[l.cat || 'Outros'] = out[l.cat || 'Outros'] || []).push(l)); return out;
+  }
+  async function abrir(id) {
+    let p = S.fila.find(x => x.id === id); if (!p) return;
+    if (p.regPor && p.regPor !== String(user.id)) { toast('Este pedido está com ' + p.regNome + '.'); return; }
+    if (!p.regPor) { try { await api('rAssumir', token, id); p.regPor = String(user.id); } catch (e) { toast(e.message); load(); return; } }
+    aberto = id;
+    const grp = agrupar(p.linhas); const obsLinhas = p.linhas.filter(l => l.obs && !l.indisponivel);
+    const g0 = p.garcomMesa || '';
+    const opG = S.garcons.map(g => `<option value="${esc(g.id)}" ${g.id === g0 ? 'selected' : ''}>${esc(g.nome)}${g.emTurno ? '' : ' (fora de turno)'}</option>`).join('');
+    openSheet(`<div class="detail"><span class="eyebrow">Pedido ${esc(p.id)}, às ${hhmm(p.t0)}</span><h3>Mesa ${esc(p.mesaNome)}</h3>
+      <ol class="reg-passos"><li>No Loyverse, abra um ticket com o nome <b>Mesa ${esc(p.mesaNome)}</b>.</li><li>Lance os artigos por esta ordem. As linhas a amarelo têm opções ou notas: lance-as e marque cada uma.</li><li>Guarde o ticket e atribua-o ao garçom escolhido abaixo.</li></ol>
+      <div class="lv-list">${Object.entries(grp).map(([c, ls]) => `<div class="lv-cat">${esc(c)}</div>${ls.map(l => {
+        const i = p.linhas.indexOf(l); const ob = l.obs && !l.indisponivel;
+        return `<div class="lv-line${ob ? ' obs' : ''}"><b class="q num">${l.qtd}×</b><div><b>${esc(l.nome)}</b>${ob ? `<div>${chips(l)}</div>` : (l.variante ? `<div class="mod">${esc(l.variante)}</div>` : '')}${l.nota ? `<div class="note">Nota do cliente: "${esc(l.nota)}"</div>` : ''}
+          <div class="row" style="margin-top:6px;gap:8px">${ob ? `<label class="reg-chk"><input type="checkbox" data-chk="${i}"> lançado com as opções</label>` : ''}${l.indisponivel ? '<span class="pill crit">esgotado</span>' : `<button class="btn sm ghost" type="button" data-ind="${l._row}" style="font-size:12px">esgotado</button>`}</div></div></div>`;
+      }).join('')}`).join('')}</div>
+      <label class="eyebrow" for="r-garcom" style="display:block;margin-top:12px">Ticket atribuído a</label>
+      <select id="r-garcom" style="width:100%;margin:4px 0 4px"><option value="">Escolha o garçom...</option>${opG}</select>
+      ${g0 ? '' : '<p class="muted" style="font-size:12px;margin:0">A mesa ainda não tem garçom: fica atribuída ao garçom que escolher.</p>'}
+      <div class="actions"><button class="btn primary" id="r-ok" type="button" disabled>Registado e atribuído</button><button class="btn" id="r-largar" type="button">Devolver à fila</button><button class="btn ghost" id="r-anul" type="button">Anular...</button></div>
+      <p class="muted" id="r-falta" style="font-size:12px;margin:8px 0 0"></p></div>`, r => {
+      const ok = r.querySelector('#r-ok'); const sel = r.querySelector('#r-garcom');
+      const rever = () => {
+        const marc = r.querySelectorAll('[data-chk]:checked').length; const falta = obsLinhas.length - marc;
+        ok.disabled = falta > 0 || !sel.value;
+        r.querySelector('#r-falta').textContent = falta > 0 ? `Falta marcar ${falta} linha(s) com observações.` : (!sel.value ? 'Escolha o garçom a quem atribuiu o ticket.' : '');
+        ok.textContent = sel.value ? 'Registado e atribuído a ' + (S.garcons.find(g => g.id === sel.value) || {}).nome : 'Registado e atribuído';
+      };
+      r.querySelectorAll('[data-chk]').forEach(c => c.addEventListener('change', () => { c.closest('.lv-line').classList.toggle('feito', c.checked); rever(); }));
+      sel.addEventListener('change', rever); rever();
+      r.querySelectorAll('[data-ind]').forEach(b => b.addEventListener('click', async () => { try { await api('gIndisponivel', token, id, +b.dataset.ind); toast('Marcado como esgotado; o cliente é avisado'); closeSheet(); aberto = null; await load(); abrir(id); } catch (e) { toast(e.message); } }));
+      ok.addEventListener('click', async () => {
+        ok.disabled = true;
+        try { const res = await api('rRegistado', token, id, sel.value, r.querySelectorAll('[data-chk]:checked').length); closeSheet(); aberto = null; toast(res && res.ja ? 'Este pedido já estava registado.' : 'Registado. O garçom vê o pedido para entregar.'); load(); }
+        catch (e) { toast(e.message); ok.disabled = false; }
+      });
+      r.querySelector('#r-largar').addEventListener('click', async () => { try { await api('rLargar', token, id); closeSheet(); aberto = null; load(); } catch (e) { toast(e.message); } });
+      r.querySelector('#r-anul').addEventListener('click', () => anular(id));
+    });
+  }
+  function anular(id) {
+    openSheet(`<h3>Anular pedido</h3><div class="opts"><button type="button" class="opt" data-r="brincadeira"><span>Pedido de brincadeira / não é da mesa</span></button><button type="button" class="opt" data-r="duplicado"><span>Pedido repetido</span></button><button type="button" class="opt" data-r="alterado"><span>Alterado na mesa</span></button></div>`, r => r.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
+      api('gAnular', token, id, b.dataset.r).then(() => { closeSheet(); aberto = null; toast('Anulado'); load(); }).catch(e => toast(e.message));
+    })));
+  }
+})();
+</script>
+</body>
+</html>
