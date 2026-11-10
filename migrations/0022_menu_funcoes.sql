@@ -97,7 +97,7 @@ end $$;
 -- ---------------------------------------------------------------- referências a artigos (por identificador ou nome)
 create or replace view menu_v_visiveis as
   select a.item_id, a.nome from menu_artigos a left join menu_extra e on e.item_id = a.item_id
-  where a.activo and not coalesce(e.oculto, false);
+  where a.activo and not coalesce(e.oculto, false) and btrim(coalesce(e.seccao, '')) <> '';
 
 create or replace function menu_ref(p_id text, p_nome text) returns text language plpgsql stable security definer set search_path = public, extensions as $$
 declare r text;
@@ -225,7 +225,7 @@ begin
     select a.*, e.nome_en, e.descricao_pt, e.descricao_en, e.etiquetas, e.foto_url, e.seccao_en,
       coalesce(nullif(btrim(e.seccao), ''), a.categoria) sec, coalesce(e.ordem, 9999) ord
     from menu_artigos a left join menu_extra e on e.item_id = a.item_id
-    where a.activo and not coalesce(e.oculto, false)),
+    where a.activo and not coalesce(e.oculto, false) and btrim(coalesce(e.seccao, '')) <> ''),
   sec as (
     select sec, min(ord) ord, max(nullif(btrim(seccao_en), '')) sec_en,
       jsonb_agg(jsonb_build_object('id', item_id, 'nome', nome, 'nome_en', coalesce(nome_en, ''), 'cat', sec, 'preco', preco, 'sku', sku,
