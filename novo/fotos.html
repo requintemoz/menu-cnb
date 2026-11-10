@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13283a">
+<title>CNB | Fotografias do menu</title>
+<link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="estilos.css?v=20261110f">
+<script src="lib/supabase.js"></script>
+<script src="config.js?v=20261110f"></script>
+<script src="comum.js?v=20261110f"></script>
+<style>
+  .f-wrap{max-width:760px;margin:0 auto}
+  .ajuda{padding:12px 14px;margin-bottom:12px}
+  .ajuda summary{cursor:pointer;font-weight:700;list-style-position:inside}
+  .ajuda ol{margin:8px 0 4px;padding-left:20px}
+  .ajuda li{margin:5px 0}
+  .ajuda p{margin:6px 0 0;font-size:14px}
+  .f-prog{margin:0 0 12px}
+  .f-bar{height:8px;border-radius:999px;background:var(--surface2);overflow:hidden;margin-top:6px}
+  .f-bar i{display:block;height:100%;width:0;background:var(--ok);border-radius:999px;transition:width .3s}
+  .f-filtros{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-bottom:6px}
+  #f-seg{flex-wrap:nowrap}
+  #f-seg button{min-width:0;font-size:14px;padding:9px 6px;white-space:nowrap}
+  .f-filtros .row{gap:8px;flex-wrap:nowrap}
+  .f-filtros input,.f-filtros select{flex:1;min-width:0;min-height:44px}
+  .f-sec{font-family:var(--display);font-size:18px;margin:18px 0 8px;display:flex;gap:8px;align-items:baseline}
+  .f-sec small{font-family:inherit;font-size:13px;color:var(--muted);font-weight:600}
+  .fi{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:8px 12px 8px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);text-align:left;width:100%;color:var(--ink);min-height:72px}
+  .fi:hover,.fi:focus-visible{border-color:var(--sea)}
+  .fi b{display:block;font-size:16px}
+  .fi .sub{font-size:13px;color:var(--muted)}
+  .f-th{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-align:center;line-height:1.15}
+  .f-th.erro{background:var(--crit-tint);color:var(--crit);font-weight:700}
+  .f-prev{aspect-ratio:16/10;max-height:260px;width:100%;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:14px;margin:6px 0 8px;text-align:center;padding:0 12px}
+  .f-prev img{width:100%;height:100%;object-fit:cover;display:block}
+  .f-prev.tem{padding:0}
+  .f-estado{min-height:22px;font-size:14px;margin:0 0 10px;font-weight:600}
+  .f-estado.ok{color:var(--ok)}
+  .f-estado.crit{color:var(--crit)}
+  .f-campo{display:block;font-weight:600;font-size:14px}
+  .f-campo input{width:100%;margin-top:4px;min-height:46px}
+  .f-acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .f-acoes .btn{flex:1 1 140px}
+</style>
+</head>
+<body>
+<header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Fotografias do menu</small></span></div></header>
+<section class="view wrap">
+  <div id="login"></div>
+  <div id="app" class="f-wrap" hidden>
+    <div class="g-head"><div><span class="eyebrow">Fotografias dos artigos</span><br><span class="who" id="f-nome">--</span></div><div class="row"><a class="btn sm" href="entrar.html" id="f-outras" hidden>Outras páginas</a><button class="btn sm" id="f-refresh" type="button">Actualizar</button><button class="btn sm ghost" id="f-exit" type="button">Sair</button></div></div>
+    <details class="card ajuda" id="f-ajuda">
+      <summary>Como pôr uma fotografia</summary>
+      <ol>
+        <li>Guarde a fotografia na pasta das fotografias do menu no Google Drive.</li>
+        <li>No Drive, abra os três pontos da fotografia, escolha <b>Partilhar</b> e, em Acesso geral, <b>Qualquer pessoa com o link</b>. Depois toque em <b>Copiar link</b>.</li>
+        <li>Aqui, toque no artigo, cole o link e confirme que a fotografia aparece. Depois toque em <b>Guardar</b>.</li>
+      </ol>
+      <p class="muted">Boas fotografias: na horizontal, com boa luz, o prato ao centro e sem pessoas. A fotografia aparece logo no menu dos clientes.</p>
+    </details>
+    <div class="f-prog"><span id="f-conta" class="muted"></span><div class="f-bar"><i id="f-barra"></i></div></div>
+    <div class="f-filtros">
+      <div class="seg" id="f-seg"><button type="button" data-f="sem" class="on">Sem foto</button><button type="button" data-f="com">Com foto</button><button type="button" data-f="todos">Todos</button></div>
+      <div class="row"><input id="f-busca" type="search" placeholder="Procurar artigo" autocomplete="off" aria-label="Procurar artigo"><select id="f-secao" aria-label="Secção"><option value="">Todas as secções</option></select></div>
+    </div>
+    <div id="f-lista"></div>
+  </div>
+</section>
+<div id="sheet-root"></div><div id="toast-root"></div>
+<script>
+(function () {
+  const { api, toast, openSheet, closeSheet, esc, sess, loginUI, offlineBar, fotoSrc, fmt } = U;
+  const PERFIS = ['fotos', 'supervisor', 'gerente'];
+  let itens = [], user = null, token = null, filtro = 'sem'; const off = offlineBar();
+  const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const quando = t => { if (!t) return ''; const d = new Date(t); return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }); };
+
+  function start(s) {
+    if (!PERFIS.includes(s.user.perfil)) { toast('Esta página é para quem trata das fotografias do menu.', 5000); sess.clear(); loginUI(PERFIS, start); return; }
+    token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false;
+    document.getElementById('f-nome').textContent = user.nome; document.getElementById('f-outras').hidden = user.perfil === 'fotos';
+    const aj = document.getElementById('f-ajuda'); let fechada = false; try { fechada = localStorage.getItem('cnb-fotos-ajuda') === 'fechada'; } catch (e) {}
+    aj.open = !fechada; aj.addEventListener('toggle', () => { try { localStorage.setItem('cnb-fotos-ajuda', aj.open ? 'aberta' : 'fechada'); } catch (e) {} });
+    load();
+  }
+  const saved = sess.get(); if (saved) start(saved); else loginUI(PERFIS, start);
+  document.getElementById('f-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
+  document.getElementById('f-refresh').addEventListener('click', load);
+  document.getElementById('f-seg').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; filtro = b.dataset.f; render(); });
+  document.getElementById('f-busca').addEventListener('input', render);
+  document.getElementById('f-secao').addEventListener('change', render);
+
+  async function load() {
+    try { itens = await api('fotosListar', token); off.off(); }
+    catch (e) { if (/Sessão/.test(e.message)) { sess.clear(); location.reload(); return; } if (/permissão/i.test(e.message)) { toast(e.message, 5000); return; } off.on(); return; }
+    const sel = document.getElementById('f-secao'), atual = sel.value; const secs = [...new Set(itens.map(i => i.seccao))];
+    sel.innerHTML = '<option value="">Todas as secções</option>' + secs.map(s => `<option${s === atual ? ' selected' : ''}>${esc(s)}</option>`).join('');
+    render();
+  }
+  // artigos visíveis com os filtros actuais, pela ordem do menu
+  function visiveis() {
+    const q = norm(document.getElementById('f-busca').value.trim()), sec = document.getElementById('f-secao').value;
+    return itens.filter(i => (filtro === 'todos' || (filtro === 'sem' ? !i.foto : !!i.foto)) && (!sec || i.seccao === sec) && (!q || norm(i.nome).includes(q)));
+  }
+  function render() {
+    const com = itens.filter(i => i.foto).length, total = itens.length;
+    document.getElementById('f-conta').innerHTML = `<b>${com}</b> de ${total} artigos com fotografia`;
+    document.getElementById('f-barra').style.width = (total ? Math.round(com / total * 100) : 0) + '%';
+    document.querySelectorAll('#f-seg [data-f]').forEach(b => { b.classList.toggle('on', b.dataset.f === filtro); const n = b.dataset.f === 'sem' ? total - com : b.dataset.f === 'com' ? com : total; b.textContent = (b.dataset.f === 'sem' ? 'Sem foto' : b.dataset.f === 'com' ? 'Com foto' : 'Todos') + ' (' + n + ')'; });
+    const vs = visiveis(); const el = document.getElementById('f-lista');
+    if (!vs.length) { el.innerHTML = `<div class="empty">${filtro === 'sem' && !document.getElementById('f-busca').value && !document.getElementById('f-secao').value ? 'Todos os artigos já têm fotografia.' : 'Nenhum artigo com estes filtros.'}</div>`; return; }
+    let html = '', sec = null;
+    vs.forEach(i => {
+      if (i.seccao !== sec) { if (sec !== null) html += '</div>'; sec = i.seccao; const n = vs.filter(x => x.seccao === sec).length; html += `<h2 class="f-sec">${esc(sec)} <small>${n}</small></h2><div class="list">`; }
+      const th = i.foto ? `<img class="f-th" loading="lazy" alt="" src="${esc(fotoSrc(i.foto, 160))}">` : '<span class="f-th">sem foto</span>';
+      const meta = i.foto ? (i.por ? `Posta por ${esc(i.por)}${i.em ? ', ' + quando(i.em) : ''}` : 'Com fotografia') : (i.preco != null ? fmt(i.preco) : '');
+      html += `<button class="fi" type="button" data-id="${esc(i.id)}">${th}<span><b>${esc(i.nome)}</b><span class="sub">${meta}</span></span>${i.noMenu ? '' : '<span class="pill grey">fora do menu agora</span>'}</button>`;
+    });
+    el.innerHTML = html + '</div>';
+    // fotografias com link que não abre: aparecem a vermelho
+    el.querySelectorAll('img.f-th').forEach(img => img.addEventListener('error', () => { const s = document.createElement('span'); s.className = 'f-th erro'; s.textContent = 'não abre'; img.replaceWith(s); }, { once: true }));
+    el.querySelectorAll('[data-id]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.id)));
+  }
+
+  function abrir(id) {
+    const it = itens.find(i => i.id === id); if (!it) return;
+    openSheet(`<span class="eyebrow">${esc(it.seccao)}</span><h3>${esc(it.nome)}</h3>
+      <div class="f-prev" id="f-prev">Sem fotografia</div><p class="f-estado" id="f-estado" role="status"></p>
+      <label class="f-campo">Link da fotografia<input id="f-url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://drive.google.com/file/d/..."></label>
+      <div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" type="button" id="f-colar">Colar link</button><button class="btn sm ghost" type="button" id="f-limpar">Limpar</button></div>
+      <div class="f-acoes"><button class="btn primary" type="button" id="f-guardar" disabled>Guardar</button><button class="btn" type="button" id="f-seguinte" disabled>Guardar e seguinte</button>${it.foto ? '<button class="btn ghost" type="button" id="f-remover">Remover fotografia</button>' : ''}<button class="btn ghost" type="button" id="f-fechar">Fechar</button></div>`, () => {
+      const inp = document.getElementById('f-url'), prev = document.getElementById('f-prev'), est = document.getElementById('f-estado');
+      const bG = document.getElementById('f-guardar'), bS = document.getElementById('f-seguinte'); let vez = 0, t = null, valido = false;
+      const estado = (txt, cls) => { est.textContent = txt; est.className = 'f-estado' + (cls ? ' ' + cls : ''); };
+      const pode = v => { valido = v; bG.disabled = !v; bS.disabled = !v; };
+      function verificar() {
+        const u = inp.value.trim(); const minha = ++vez; pode(false);
+        if (!u) { prev.className = 'f-prev'; prev.textContent = it.foto ? 'Cole o novo link' : 'Sem fotografia'; estado(it.foto ? '' : 'Cole o link da fotografia.'); return; }
+        if (!/^https:\/\/\S+$/i.test(u)) { prev.className = 'f-prev'; prev.textContent = 'Link inválido'; estado('O link tem de começar por https:// e não pode ter espaços.', 'crit'); return; }
+        estado('A verificar a fotografia...'); const img = new Image();
+        img.onload = () => { if (minha !== vez) return; prev.className = 'f-prev tem'; prev.innerHTML = ''; img.alt = ''; prev.appendChild(img); estado(u === it.foto ? 'Esta é a fotografia actual.' : 'A fotografia abre bem. Assim aparece no menu.', 'ok'); pode(u !== it.foto); };
+        img.onerror = () => { if (minha !== vez) return; prev.className = 'f-prev'; prev.textContent = 'A fotografia não abre'; estado(/drive\.google/.test(u) ? 'Este link não abre como fotografia. No Drive, confirme que a partilha está em "Qualquer pessoa com o link".' : 'Este link não abre como fotografia. Use o link de partilha do Google Drive.', 'crit'); };
+        img.src = fotoSrc(u, 1000);
+      }
+      inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(verificar, 350); });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter' && valido) guardar(false); });
+      document.getElementById('f-colar').addEventListener('click', async () => {
+        try { const txt = await navigator.clipboard.readText(); if (!txt) throw new Error('vazio'); inp.value = txt.trim(); verificar(); }
+        catch (e) { inp.focus(); toast('Toque longo na caixa do link e escolha Colar.', 3500); }
+      });
+      document.getElementById('f-limpar').addEventListener('click', () => { inp.value = ''; verificar(); inp.focus(); });
+      document.getElementById('f-fechar').addEventListener('click', closeSheet);
+      const rem = document.getElementById('f-remover');
+      if (rem) rem.addEventListener('click', async () => {
+        if (!rem.dataset.conf) { rem.dataset.conf = '1'; rem.textContent = 'Toque de novo para remover'; return; }
+        rem.disabled = true; try { aplicar(await api('fotoGuardar', token, it.id, '')); closeSheet(); toast('Fotografia removida.'); } catch (e) { rem.disabled = false; toast(esc(e.message), 4000); }
+      });
+      async function guardar(seguinte) {
+        if (!valido) return; const ordem = visiveis(); const pos = ordem.findIndex(i => i.id === it.id);
+        bG.disabled = bS.disabled = true;
+        try { aplicar(await api('fotoGuardar', token, it.id, inp.value.trim())); }
+        catch (e) { bG.disabled = bS.disabled = false; toast(esc(e.message), 4000); return; }
+        if (!seguinte) { closeSheet(); toast('Fotografia guardada. Já aparece no menu.'); return; }
+        const prox = ordem.slice(pos + 1).find(i => !itens.find(x => x.id === i.id).foto);
+        if (prox) { toast('Fotografia guardada.'); abrir(prox.id); } else { closeSheet(); toast('Fotografia guardada. Não há mais artigos sem fotografia nesta lista.', 4000); }
+      }
+      bG.addEventListener('click', () => guardar(false)); bS.addEventListener('click', () => guardar(true));
+      if (it.foto) { inp.value = it.foto; verificar(); } else { estado('Cole o link da fotografia.'); }
+    });
+  }
+  function aplicar(r) { const i = itens.find(x => x.id === r.id); if (i) { i.foto = r.foto; i.por = r.por; i.em = r.em; } render(); }
+})();
+</script>
+</body>
+</html>

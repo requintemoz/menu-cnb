@@ -59,6 +59,8 @@
   const nivel = (m, lim) => m > lim ? 'crit' : m > lim * 0.6 ? 'warn' : 'ok';
   // texto vindo do Loyverse ou da folha: troca travessões, aspas angulares, reticências e pontos médios por sinais simples
   const limpa = s => String(s == null ? '' : s).replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, '$1-$2').replace(/\s+[\u2013\u2014]\s+([^\u2013\u2014]+)$/, ' ($1)').replace(/[\u2013\u2014]/g, '-').replace(/[\u00ab\u00bb\u201c\u201d]/g, '"').replace(/\u2026/g, '...').replace(/\s\u00b7\s/g, ', ');
+  // fotografias: aceita links de partilha do Google Drive e converte para imagem directa (igual ao menu do cliente)
+  const fotoSrc = (u, w) => { const m = String(u || '').match(/[-\w]{25,}/); return m && /drive\.google/.test(u) ? 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000) : u; };
   const esc = s => limpa(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // sessão da equipa: a sessão é a do Supabase (partilhada com os bilhetes e as mesas); aqui guarda-se só o nome e o perfil
   const sess = {
@@ -73,5 +75,5 @@
   function armarSom() { document.addEventListener('pointerdown', () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }, { once: true }); }
   // indicador de ligação
   function offlineBar() { const el = document.createElement('div'); el.className = 'offline'; el.hidden = true; el.textContent = 'Sem ligação. A tentar de novo...'; document.body.appendChild(el); return { on() { el.hidden = false; }, off() { el.hidden = true; } }; }
-  window.U = { sb, tempoReal, api, toast, copiar, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, limpa, sess, loginUI, beep, armarSom, offlineBar };
+  window.U = { sb, tempoReal, api, toast, copiar, fotoSrc, openSheet, closeSheet, fmt, hhmm, mins, nivel, esc, limpa, sess, loginUI, beep, armarSom, offlineBar };
 })();
