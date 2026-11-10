@@ -8,17 +8,17 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110b">
+<link rel="stylesheet" href="estilos.css?v=20261110c">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110b"></script>
-<script src="comum.js?v=20261110b"></script>
+<script src="config.js?v=20261110c"></script>
+<script src="comum.js?v=20261110c"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Registo de pedidos</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num">--</span></div></header>
 <section class="view wrap">
   <div id="login"></div>
   <div id="app" hidden>
-    <div class="g-head"><div><span class="eyebrow">Registo no Loyverse</span><br><span class="who" id="r-name">--</span> <span class="muted" id="r-hoje"></span></div><div class="row"><button class="btn sm" id="r-refresh" type="button">Actualizar</button><button class="btn sm ghost" id="r-exit" type="button">Sair</button></div></div>
+    <div class="g-head"><div><span class="eyebrow">Registo no Loyverse</span><br><span class="who" id="r-name">--</span> <span class="muted" id="r-hoje"></span></div><div class="row"><a class="btn sm" href="balcao.html" id="r-balcao" hidden>Balcão</a><button class="btn sm" id="r-refresh" type="button">Actualizar</button><button class="btn sm ghost" id="r-exit" type="button">Sair</button></div></div>
     <div class="reg-aviso" id="r-modo" hidden>O modo de registo central está desligado (Config: modo_registo). Os garçons continuam a lançar os seus pedidos; esta página serve de apoio.</div>
     <div class="row" style="margin-bottom:8px"><span class="eyebrow">Fila</span><span class="muted" id="r-count"></span><span class="muted" id="r-quem" style="margin-left:auto;font-size:12px"></span></div>
     <div class="list" id="r-list"></div>
@@ -29,11 +29,11 @@
 (function () {
   const { api, toast, openSheet, closeSheet, hhmm, mins, nivel, esc, sess, loginUI, beep, armarSom, offlineBar } = U;
   const PERFIS = ['registo', 'caixa', 'supervisor', 'gerente'];
-  let S = null, user = null, token = null, lastIds = new Set(), aberto = null; const off = offlineBar(); armarSom();
+  let pedidoInicial = new URLSearchParams(location.search).get('p'); let S = null, user = null, token = null, lastIds = new Set(), aberto = null; const off = offlineBar(); armarSom();
   setInterval(() => document.getElementById('clock').textContent = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), 1000);
   function start(s) {
     if (!PERFIS.includes(s.user.perfil)) { toast('Esta página é para quem regista os pedidos (perfil registo, caixa, supervisor ou gerente).', 5000); sess.clear(); loginUI(PERFIS, start); return; }
-    token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('r-name').textContent = user.nome; load(); setInterval(load, CNB.POLL_STAFF_MS); U.tempoReal(load);
+    token = s.token; user = s.user; document.getElementById('login').innerHTML = ''; document.getElementById('app').hidden = false; document.getElementById('r-name').textContent = user.nome; document.getElementById('r-balcao').hidden = !['caixa', 'supervisor', 'gerente'].includes(user.perfil); load(); setInterval(load, CNB.POLL_STAFF_MS); U.tempoReal(load);
   }
   const saved = sess.get(); if (saved) start(saved); else loginUI(PERFIS, start);
   document.getElementById('r-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
@@ -63,6 +63,7 @@
       return `<button class="wi ${nivel(m, lim())}" type="button" data-p="${esc(p.id)}"><span class="mesa">${esc(p.mesaNome)}</span><span><b>${n} artigo(s)</b> ${estado}${obs ? ` <span class="pill warn">${obs} com observações</span>` : ''}<br><span class="sub">${p.linhas.slice(0, 3).map(l => l.qtd + '× ' + esc(l.nome)).join(', ')}${p.linhas.length > 3 ? '...' : ''}</span><br><span class="sub">${p.garcomMesa ? 'garçom da mesa: ' + esc(nome(p.garcomMesa)) : 'mesa sem garçom atribuído'}</span></span><span class="t num">${Math.round(m)} min</span></button>`;
     }).join('') : '<div class="empty">Sem pedidos por registar. A página avisa com som quando chegar um novo.</div>';
     document.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.p)));
+    if (pedidoInicial) { const pi = pedidoInicial; pedidoInicial = null; if (S.fila.some(x => x.id === pi)) abrir(pi); } // veio do balcão com um pedido escolhido
     if (aberto && !S.fila.some(p => p.id === aberto)) { aberto = null; }
   }
   function agrupar(linhas) { // ordem das categorias do Loyverse, para lançar de cima para baixo
