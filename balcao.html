@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110h">
+<link rel="stylesheet" href="estilos.css?v=20261110i">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110h"></script>
-<script src="comum.js?v=20261110h"></script>
+<script src="config.js?v=20261110i"></script>
+<script src="comum.js?v=20261110i"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Ecrã do balcão</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num"></span> <span id="b-who" class="muted"></span> <button type="button" id="b-exit">Sair</button></div></header>
@@ -29,6 +29,7 @@
         <div class="b-list"><h3>Pedidos por registar <span class="pill grey" id="b-n-ped">0</span></h3><div class="list" id="b-ped"></div></div>
         <div class="b-list"><h3>Chamadas por atender <span class="pill grey" id="b-n-ch">0</span></h3><div class="list" id="b-ch"></div></div>
         <div class="b-list"><h3>Contas pedidas <span class="pill grey" id="b-n-ct">0</span></h3><div class="list" id="b-ct"></div></div>
+        <div class="b-list" id="b-tel-wrap" hidden><h3>Mesas a pedir pelo telemóvel <span class="pill grey" id="b-n-tel">0</span></h3><p class="muted" style="margin:0 0 8px;font-size:13px">Depois de fechar a conta no Loyverse, toque em "Conta fechada" para a mesa ficar livre para o próximo cliente.</p><div class="list" id="b-tel"></div></div>
         <div class="b-list" id="b-fid-box" hidden><h3>Cartão Requinte</h3><div class="row" style="gap:6px"><input id="b-fid-q" placeholder="Celular ou nome do cliente" style="flex:1;min-width:0" inputmode="search"><button class="btn sm" id="b-fid-go" type="button">Procurar</button></div><div class="list" id="b-fid-r" style="margin-top:8px"></div></div>
       </div>
     </div>
@@ -77,7 +78,12 @@
     const bp = document.getElementById('b-ped'); bp.innerHTML = ped.sort((a, b) => new Date(a.t0) - new Date(b.t0)).map(p => line(p.mesa, p.t0, `${p.n} artigos, ${p.t1 ? 'recebido por ' + esc(nome(p.g1)) : 'por aceitar'}`, `garçom da mesa: ${esc(nome(atrib[p.mesa]))}${p.reg_por ? ', em registo por ' + esc(nome(p.reg_por)) : p.caixa ? ', em registo pelo caixa' : ''}`, p.t1 ? L.registar : L.aceitar, p.reg_por && S.user && String(p.reg_por) !== String(S.user.id) ? '' : `<a class="btn sm primary" href="registo.html?p=${encodeURIComponent(p.id)}">Ver e registar</a>`)).join('') || '<div class="empty">Nenhum pedido por registar</div>';
     bp.querySelectorAll('[data-cx]').forEach(b => b.addEventListener('click', async () => { try { await api('bVouRegistar', token, b.dataset.cx); toast('Saiu da lista do garçom. Lance no Loyverse e transfira o ticket para o garçom da mesa.', 4000); load(); } catch (e) { toast(e.message); } }));
     bp.querySelectorAll('[data-regcx]').forEach(b => b.addEventListener('click', async () => { try { await api('bRegistadoCaixa', token, b.dataset.regcx); toast('Registado pelo caixa.'); load(); } catch (e) { toast(e.message); } }));
-    document.getElementById('b-ch').innerHTML = chs.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => line(c.mesa, c.c0, esc(c.motivo), c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa])), L.chamada)).join('') || '<div class="empty">Nenhuma chamada</div>';
+    const outroTel = c => c.motivo === 'Pedir de outro telemóvel';
+    document.getElementById('b-ch').innerHTML = chs.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => line(c.mesa, c.c0, outroTel(c) ? 'Quer pedir de outro telemóvel' : esc(c.motivo), c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa])), L.chamada, outroTel(c) && (S.telemoveis || []).some(x => x.mesa === c.mesa) ? `<button class="btn sm" type="button" data-tel="${esc(c.mesa)}" data-telmsg="1">Libertar a mesa</button>` : '')).join('') || '<div class="empty">Nenhuma chamada</div>';
+    // mesas a pedir pelo telemóvel: "Conta fechada" deixa a mesa livre para o próximo cliente
+    const tels = S.telemoveis || []; document.getElementById('b-tel-wrap').hidden = !tels.length; document.getElementById('b-n-tel').textContent = tels.length;
+    document.getElementById('b-tel').innerHTML = tels.map(x => `<div class="wi ok"><span class="mesa">${esc(x.nome)}</span><span><b>Desde as ${hhmm(x.desde)}</b><br><span class="sub">garçom da mesa: ${esc(nome(x.garcom))}, último movimento há ${Math.max(0, Math.round(mins(x.activa)))} min</span></span><button class="btn sm primary" type="button" data-tel="${esc(x.mesa)}">Conta fechada</button></div>`).join('');
+    document.querySelectorAll('[data-tel]').forEach(b => b.addEventListener('click', async () => { b.disabled = true; try { await api('gLibertarTelemovel', token, b.dataset.tel); toast(b.dataset.telmsg ? 'Mesa livre: o próximo telemóvel que pedir passa a ser o da mesa.' : 'Conta fechada. A mesa fica livre para o próximo cliente.', 3500); load(); } catch (e) { b.disabled = false; toast(e.message); } }));
     const bct = document.getElementById('b-ct');
     bct.innerHTML = cts.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => { const f = F.contas && F.contas[c.id]; const fid = f ? `<span class="fid">Cartão Requinte: ${esc(f.nome)}${f.disponiveis.length ? ', brinde: ' + f.disponiveis.map(d => esc(d.brinde)).join(', ') : ''}</span>` : ''; const bt = f ? f.disponiveis.map(d => `<button class="btn sm primary" type="button" data-cli="${esc(f.id)}" data-chave="${esc(d.chave)}" data-brinde="${esc(d.brinde)}" data-nome="${esc(f.nome)}" data-mesa="${esc(c.mesa)}">Entregar brinde</button>`).join('<br>') : ''; return line(c.mesa, c.c0, 'Conta', (c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa]))) + fid, L.chamada, bt); }).join('') || '<div class="empty">Nenhuma conta pedida</div>';
     bct.querySelectorAll('[data-chave]').forEach(b => b.addEventListener('click', () => entregar(b.dataset)));

@@ -107,6 +107,8 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .cart-line{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .cart-line small{display:block;color:var(--muted)}
 .my-orders{margin-top:18px}
+.tel-aviso{background:var(--warn-tint);border:1px solid var(--warn);border-radius:var(--r);padding:12px 14px;margin:0 0 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.tel-aviso p{margin:0;flex:1 1 220px;font-size:15px;color:var(--ink)}
 .ord{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;background:var(--surface)}
 .steps{display:flex;gap:4px}
 .steps i{width:22px;height:5px;border-radius:3px;background:var(--line)}

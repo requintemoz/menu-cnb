@@ -194,6 +194,7 @@ window.TRAD_EN = {
   'O seu garçom já vem.': 'Your waiter is on the way.',
   'Desculpe, este artigo esgotou. O garçom vai propor-lhe uma alternativa.': 'Sorry, this item is sold out. Your waiter will suggest an alternative.',
   'Preciso de ajuda': 'I need help',
+  'Pedir de outro telemóvel': 'Order from another phone',
   'Mais pão / água': 'More bread or water',
   'Alterar o pedido': 'Change my order',
   'Outro': 'Other',
