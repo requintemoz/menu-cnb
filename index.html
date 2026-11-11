@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261111d">
-<script src="config.js?v=20261111d"></script>
-<script src="comum.js?v=20261111d"></script>
-<script src="traducoes.js?v=20261111d"></script>
+<link rel="stylesheet" href="estilos.css?v=20261111e">
+<script src="config.js?v=20261111e"></script>
+<script src="comum.js?v=20261111e"></script>
+<script src="traducoes.js?v=20261111e"></script>
 </head>
 <body class="cliente">
 <svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -153,7 +153,7 @@
     el.innerHTML = evs.map((e, i) => { const pr = e.promo, imgs = e.imagens || [];
       return `<article class="ev${imgs.length ? '' : ' ev-sem'}" data-ev="${i}"><div class="ev-fotos" tabindex="0"${imgs.length ? '' : ' hidden'}>${imgs.map((g, k) => `<button type="button" class="ev-foto" data-k="${k}"${g.promo && pr ? ' data-promo="1"' : ''} aria-label="${esc(g.promo && pr ? exT(pr, 'titulo') : (g.alt || exT(e, 'titulo')))}"><img src="${esc(g.url)}" alt="${esc(g.alt || '')}" ${k ? 'loading="lazy"' : ''} width="1080" height="1350">${g.promo && pr ? `<span class="ev-tag">${esc(exT(pr, 'titulo'))}</span>` : ''}</button>`).join('')}</div>
         ${imgs.length > 1 ? `<div class="ev-pontos" aria-hidden="true">${imgs.map((g, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}
-        <div class="ev-txt"><span class="eyebrow">${L === 'en' ? 'Event' : 'Evento'}</span><h2>${esc(exT(e, 'titulo'))}</h2><p class="ev-quando">${esc(e.bilhetes ? evData(e) : exT(e, 'quando'))}</p>${exT(e, 'texto') ? `<p>${esc(exT(e, 'texto'))}</p>` : ''}${e.link ? `<a class="btn primary ev-btn" href="${esc(e.link)}" target="_blank" rel="noopener">${L === 'en' ? 'Buy tickets' : 'Comprar bilhetes'}</a>` : ''}
+        <div class="ev-txt"><span class="eyebrow">${L === 'en' ? 'Event' : 'Evento'}</span><h2>${esc(exT(e, 'titulo'))}</h2><p class="ev-quando">${esc(e.bilhetes ? evData(e) : exT(e, 'quando'))}</p>${exT(e, 'texto') ? `<p>${esc(exT(e, 'texto'))}</p>` : ''}${e.link ? `<a class="btn ${e.bilhetes ? 'primary ' : ''}ev-btn" href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.bilhetes ? (L === 'en' ? 'Buy tickets' : 'Comprar bilhetes') : (exT(e, 'link_texto') || (L === 'en' ? 'See more' : 'Ver mais')))}</a>` : ''}
         ${pr ? `<button type="button" class="btn primary ev-btn" data-promo="1">${esc(exT(pr, 'titulo'))}</button>` : ''}</div></article>`; }).join('');
     el.querySelectorAll('.ev').forEach(card => { const e = evs[Number(card.dataset.ev)]; const fotos = card.querySelector('.ev-fotos'), pts = card.querySelectorAll('.ev-pontos i');
       fotos.addEventListener('scroll', () => { const k = Math.round(fotos.scrollLeft / Math.max(1, fotos.clientWidth)); pts.forEach((p, j) => p.classList.toggle('on', j === k)); }, { passive: true });
