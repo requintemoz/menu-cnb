@@ -64,6 +64,25 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .c-head .mesa{font-size:13px;color:var(--muted)}
 .qr-sim{display:flex;gap:8px;align-items:center;background:var(--sea-tint);color:var(--sea);border-radius:var(--r);padding:8px 12px;font-size:13px;margin-bottom:12px;flex-wrap:wrap}
 .qr-sim select{padding:4px 8px;font-size:13px}
+.ev{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden;margin:0 0 14px;box-shadow:var(--shadow);max-width:520px}
+.ev-fotos{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.ev-fotos::-webkit-scrollbar{display:none}
+.ev-foto{flex:0 0 100%;scroll-snap-align:center;position:relative;padding:0;border:0;background:var(--surface2);cursor:pointer;display:block}
+.ev-foto img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover}
+.ev-tag{position:absolute;left:12px;right:12px;bottom:12px;background:#d6257f;color:#fff;font-weight:700;font-size:15px;border-radius:999px;padding:10px 14px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.ev-pontos{display:flex;justify-content:center;gap:6px;padding:8px 0 0}
+.ev-pontos i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.ev-pontos i.on{background:var(--accent)}
+.ev-txt{padding:10px 14px 14px}
+.ev-txt h2{font-family:var(--display);font-size:22px;margin:2px 0 2px;line-height:1.15}
+.ev-txt p{margin:0 0 8px;font-size:15px}
+.ev-txt .ev-quando{font-weight:700;color:var(--accent)}
+.ev-btn{width:100%;min-height:48px}
+.ev-grande{display:block;width:100%;height:auto;border-radius:10px;margin-bottom:10px}
+.ev-mini{display:block;width:100%;max-height:230px;object-fit:cover;object-position:50% 72%;border-radius:10px;margin-bottom:10px}
+.ev-premio{text-align:center;padding:6px 0 4px}
+.ev-premio .ico{width:44px;height:44px;color:var(--accent);margin-bottom:4px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ev-premio h3{margin:2px 0 6px}
 .hl{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;margin:0 0 14px}
 .hl .h{scroll-snap-align:start;border-radius:var(--r);padding:12px 14px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;gap:6px;border:1px solid var(--line);background:var(--surface)}
 .hl .h.acc{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}

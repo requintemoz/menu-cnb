@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261111a">
-<script src="config.js?v=20261111a"></script>
-<script src="comum.js?v=20261111a"></script>
-<script src="traducoes.js?v=20261111a"></script>
+<link rel="stylesheet" href="estilos.css?v=20261111b">
+<script src="config.js?v=20261111b"></script>
+<script src="comum.js?v=20261111b"></script>
+<script src="traducoes.js?v=20261111b"></script>
 </head>
 <body class="cliente">
 <svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -44,6 +44,7 @@
     <div class="c-head"><div><h1 class="logo-h1"><picture><source srcset="img/requinte-claro.webp" media="(prefers-color-scheme: dark)"><img class="logo-req" src="img/requinte.webp" alt="Requinte Wine Restaurante" width="480" height="279" fetchpriority="high"></picture><span id="c-nome" class="sr-only">Requinte Wine Restaurante</span></h1><div class="mesa"><span id="c-clube"></span>, <span id="c-mesa-lbl">Mesa</span></div><div class="wifi" id="c-wifi"></div></div><div class="c-side"><img class="logo-cnb" src="img/cnb.webp" alt="Clube Náutico da Beira" width="240" height="240"><button class="btn sm ghost" id="c-myorders" type="button"><span data-t="meus">Os meus pedidos</span> <span class="badge" id="c-ord-badge" hidden>0</span></button></div></div>
     <p class="muted" id="c-boas" style="margin:0 0 10px"></p>
     <div class="tel-aviso" id="c-tel" role="status" hidden></div>
+    <div id="c-ev"></div>
     <div class="hl" id="c-hl"></div>
     <div id="c-fid"></div>
     <div class="atalhos" id="c-atalhos"></div>
@@ -129,10 +130,43 @@
   function applyLang() { if (typeof telAviso === 'function' && estado) telAviso(); document.querySelectorAll('[data-t]').forEach(e => e.textContent = t(e.dataset.t)); document.getElementById('c-search').placeholder = t('procurar'); document.getElementById('c-mesa-lbl').textContent = (L === 'en' ? 'Table ' : 'Mesa ') + mesa.nome; document.getElementById('c-boas').textContent = boas(); render(); }
   document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => { L = b.dataset.l; document.querySelectorAll('.lang button').forEach(x => x.classList.toggle('on', x === b)); applyLang(); }));
   function horarioOk(h) { if (!h) return true; const [a, b] = h.split('-'); const n = new Date().toTimeString().slice(0, 5); return n >= a && n <= b; }
-  function render() { renderHl();
+  function render() { renderEv(); renderHl();
     const cats = document.getElementById('c-cats'); cats.innerHTML = M.menu.map(c => `<button type="button" data-cat="${esc(c.nome)}">${esc(secN(c))}</button>`).join('');
     cats.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { const g = document.querySelector(`[data-grp="${CSS.escape(b.dataset.cat)}"]`); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); cats.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }));
     renderMenu(''); renderOrders(); cartBar(); fidFaixa();
+  }
+  // ---------- eventos: cartão com fotografias e promoção ligada a artigos ----------
+  function renderEv() {
+    const el = document.getElementById('c-ev'); const evs = M.eventos || [];
+    el.innerHTML = evs.map((e, i) => { const pr = e.promo, imgs = e.imagens || [];
+      return `<article class="ev" data-ev="${i}"><div class="ev-fotos" tabindex="0">${imgs.map((g, k) => `<button type="button" class="ev-foto" data-k="${k}"${g.promo && pr ? ' data-promo="1"' : ''} aria-label="${esc(g.promo && pr ? exT(pr, 'titulo') : (g.alt || exT(e, 'titulo')))}"><img src="${esc(g.url)}" alt="${esc(g.alt || '')}" ${k ? 'loading="lazy"' : ''} width="1080" height="1350">${g.promo && pr ? `<span class="ev-tag">${esc(exT(pr, 'titulo'))}</span>` : ''}</button>`).join('')}</div>
+        ${imgs.length > 1 ? `<div class="ev-pontos" aria-hidden="true">${imgs.map((g, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}
+        <div class="ev-txt"><span class="eyebrow">${L === 'en' ? 'Event' : 'Evento'}</span><h2>${esc(exT(e, 'titulo'))}</h2><p class="ev-quando">${esc(exT(e, 'quando'))}</p><p>${esc(exT(e, 'texto'))}</p>
+        ${pr ? `<button type="button" class="btn primary ev-btn" data-promo="1">${esc(exT(pr, 'titulo'))}</button>` : ''}</div></article>`; }).join('');
+    el.querySelectorAll('.ev').forEach(card => { const e = evs[Number(card.dataset.ev)]; const fotos = card.querySelector('.ev-fotos'), pts = card.querySelectorAll('.ev-pontos i');
+      fotos.addEventListener('scroll', () => { const k = Math.round(fotos.scrollLeft / Math.max(1, fotos.clientWidth)); pts.forEach((p, j) => p.classList.toggle('on', j === k)); }, { passive: true });
+      card.querySelectorAll('[data-promo]').forEach(b => b.addEventListener('click', () => promoSheet(e)));
+      card.querySelectorAll('.ev-foto:not([data-promo])').forEach(b => b.addEventListener('click', () => { const g = e.imagens[Number(b.dataset.k)]; openSheet(`<img class="ev-grande" src="${esc(g.url)}" alt="${esc(g.alt || '')}"><div class="actions"><button class="btn ghost" type="button" id="ev-x">${t('fechar')}</button></div>`, r => r.querySelector('#ev-x').addEventListener('click', closeSheet)); }));
+    });
+  }
+  function promoSheet(e) {
+    const pr = e.promo; if (!pr) return; const it = (pr.itens || []).map(id => byId[id]).filter(Boolean)[0]; const g = (e.imagens || []).find(x => x.promo);
+    const ate = pr.ate ? new Date(pr.ate + 'T12:00:00').toLocaleDateString(L === 'en' ? 'en-GB' : 'pt-PT', { day: 'numeric', month: 'long' }) : '';
+    openSheet(`${g ? `<img class="ev-mini" src="${esc(g.url)}" alt="">` : ''}<span class="eyebrow">${esc(exT(e, 'titulo'))}</span><h3>${esc(exT(pr, 'titulo'))}</h3>
+      <p>${it ? `${pr.qtd} × ${esc(exT(it, 'nome'))} = <b class="num">${fmt(pr.qtd * it.preco)}</b>. ` : ''}${L === 'en' ? `When you confirm the order you get 1 ${esc(exT(pr, 'premio'))}.` : `Ao confirmar o pedido ganha 1 ${esc(exT(pr, 'premio'))}.`}${ate ? (L === 'en' ? ` Valid until ${ate}.` : ` Válido até ${ate}.`) : ''}</p>
+      <div class="actions">${it ? `<button class="btn primary" type="button" id="ev-add">${L === 'en' ? 'Add to my order' : 'Juntar ao pedido'}</button>` : `<button class="btn primary" type="button" id="ev-ch">${t('telChamar')}</button>`}<button class="btn ghost" type="button" id="ev-x">${t('fechar')}</button></div>`, r => {
+      r.querySelector('#ev-x').addEventListener('click', closeSheet);
+      const ch = r.querySelector('#ev-ch'); if (ch) ch.addEventListener('click', async () => { try { await api('chamarGarcom', code, 'Preciso de ajuda', ''); closeSheet(); toast(t('chamado')); poll(); } catch (x) { toast(x.message); } });
+      const add = r.querySelector('#ev-add'); if (add) add.addEventListener('click', () => {
+        const ja = carrinho.find(l => l.item === it.id && !l.variante && !(l.mods || []).length);
+        if (ja) ja.qtd = Math.max(ja.qtd, pr.qtd); else carrinho.push({ item: it.id, nome: it.nome, cat: it.catNome, qtd: pr.qtd, preco: it.preco, variante: '', mods: [], nota: '' });
+        closeSheet(); cartBar(); cartSheet();
+      });
+    });
+  }
+  // aviso do prémio logo a seguir a confirmar o pedido
+  function premioSheet(ps, novo) {
+    openSheet(`<p class="muted" style="text-align:center;margin:0 0 4px">${novo ? t('telMeu') : t('enviado')}</p>` + ps.map(p => `<div class="ev-premio"><svg class="ico" aria-hidden="true"><use href="#i-presente"/></svg><span class="eyebrow">${esc(p.titulo)}</span><h3>${L === 'en' ? 'You won' : 'Ganhou'} ${p.n} ${esc(L === 'en' && p.premio_en ? p.premio_en : p.premio)}</h3><p>${esc(L === 'en' && p.msg_en ? p.msg_en : p.msg)}</p></div>`).join('') + `<div class="actions"><button class="btn primary" type="button" id="ev-ok">OK</button></div>`, r => r.querySelector('#ev-ok').addEventListener('click', closeSheet));
   }
   function renderHl() {
     document.getElementById('c-hl').innerHTML = M.destaques.map(d => { if (d.tipo === 'oferta') return valeHtml(d); const cor = { prato_do_dia: 'acc', promocao: 'sea' }[d.tipo] || ''; const tipo = { prato_do_dia: L === 'en' ? 'Dish of the day' : 'Prato do dia', chef: L === 'en' ? "Chef's suggestion" : 'Sugestão do chef', promocao: L === 'en' ? 'Promotion' : 'Promoção', evento: L === 'en' ? 'Event' : 'Evento' }[d.tipo] || d.tipo; return `<div class="h ${cor}"><div><span class="eyebrow">${esc(tipo)}</span><b>${esc(exT(d, 'titulo'))}</b><small>${esc(exT(d, 'texto'))}</small></div>${d.item && byId[d.item] ? `<button type="button" data-item="${d.item}">${L === 'en' ? 'See in menu' : 'Ver no menu'}</button>` : ''}</div>`; }).join('');
@@ -210,7 +244,7 @@
       r.querySelector('#cl-confirm').addEventListener('click', async () => {
         r.querySelector('#cl-confirm').disabled = true;
         if (lemb) lemb.itens.forEach(x => { sugs.push({ tipo: lemb.tipo, origem: '', item: x, aceite: extras.has(x) }); if (extras.has(x) && byId[x]) carrinho.push({ item: x, nome: byId[x].nome, cat: byId[x].catNome, qtd: 1, preco: byId[x].preco, variante: '', mods: [], nota: '' }); });
-        try { const res = await api('enviarPedido', code, visita.id, carrinho, sugs, cli ? cli.token : ''); guardaRonda(res && res.id, carrinho); carrinho = []; sugs = []; closeSheet(); cartBar(); toast(res && res.telemovelNovo ? t('telMeu') : t('enviado'), res && res.telemovelNovo ? 6000 : undefined); poll(); }
+        try { const res = await api('enviarPedido', code, visita.id, carrinho, sugs, cli ? cli.token : ''); guardaRonda(res && res.id, carrinho); carrinho = []; sugs = []; closeSheet(); cartBar(); if (res && res.premios && res.premios.length) premioSheet(res.premios, res.telemovelNovo); else toast(res && res.telemovelNovo ? t('telMeu') : t('enviado'), res && res.telemovelNovo ? 6000 : undefined); poll(); }
         catch (e) { if (sugs.length && lemb) sugs = sugs.filter(x => x.tipo !== lemb.tipo); if (/outro telem/i.test(e.message)) { telBloqueado(); poll(); return; } toast(e.message); r.querySelector('#cl-confirm').disabled = false; }
       });
     });
