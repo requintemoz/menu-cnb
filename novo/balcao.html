@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261110l">
+<link rel="stylesheet" href="estilos.css?v=20261111a">
 <script src="lib/supabase.js"></script>
-<script src="config.js?v=20261110l"></script>
-<script src="comum.js?v=20261110l"></script>
+<script src="config.js?v=20261111a"></script>
+<script src="comum.js?v=20261111a"></script>
 </head>
 <body>
 <header class="top wrap"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Ecrã do balcão</small></span></div><div class="clock" style="margin-left:auto"><span id="clock" class="num"></span> <span id="b-who" class="muted"></span> <button type="button" id="b-exit">Sair</button></div></header>
@@ -27,6 +27,7 @@
       <div class="b-lists">
         <div class="b-list sup" id="b-sup-wrap" hidden><h3>Supervisor(a) chamado(a) <span class="pill crit" id="b-n-sup">0</span></h3><div class="list" id="b-sup"></div></div>
         <div class="b-list"><h3>Pedidos por registar <span class="pill grey" id="b-n-ped">0</span></h3><div class="list" id="b-ped"></div></div>
+        <div class="b-list" id="b-ent-wrap" hidden><h3 style="display:flex;align-items:center;gap:8px">Registados, por entregar <span class="pill grey" id="b-n-ent">0</span><button class="btn sm" type="button" id="b-ent-todas" style="margin-left:auto" hidden>Marcar todos entregues</button></h3><p class="muted" style="margin:0 0 8px;font-size:13px">O garçom fecha-os ao encostar o POS à etiqueta da mesa. Se ficou por fazer, marque aqui.</p><div class="list" id="b-ent"></div></div>
         <div class="b-list"><h3 style="display:flex;align-items:center;gap:8px">Chamadas por atender <span class="pill grey" id="b-n-ch">0</span><button class="btn sm" type="button" id="b-ch-todas" style="margin-left:auto" hidden>Limpar todas</button></h3><div class="list" id="b-ch"></div></div>
         <div class="b-list"><h3>Contas pedidas <span class="pill grey" id="b-n-ct">0</span></h3><div class="list" id="b-ct"></div></div>
         <div class="b-list" id="b-tel-wrap" hidden><h3>Mesas a pedir pelo telemóvel <span class="pill grey" id="b-n-tel">0</span></h3><p class="muted" style="margin:0 0 8px;font-size:13px">Cada mesa fica livre sozinha até 2 minutos depois de a conta ser paga no Loyverse (ticket com o nome "Mesa N"). Para a libertar já, toque em "Conta fechada".</p><div class="list" id="b-tel"></div></div>
@@ -46,6 +47,11 @@
   const saved = sess.get(); if (saved) start(saved); else loginUI(['caixa', 'supervisor', 'gerente'], start);
   document.getElementById('b-exit').addEventListener('click', async () => { try { await api('logout', token); } catch (e) {} sess.clear(); location.reload(); });
   const nome = id => (S && S.nomes[id]) || id || '-';
+  document.getElementById('b-ent-todas').addEventListener('click', async e => {
+    const b = e.currentTarget; const ids = JSON.parse(b.dataset.ids || '[]'); if (!ids.length) return;
+    if (!b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Confirmar: ' + ids.length + ' entregues'; return; }
+    b.disabled = true; try { const r = await api('bEntregarPedidos', token, ids); toast(r.entregues + ' pedidos marcados como entregues.', 3000); } catch (err) { toast(err.message); } b.disabled = false; load();
+  });
   document.getElementById('b-ch-todas').addEventListener('click', async e => {
     const b = e.currentTarget; const ids = JSON.parse(b.dataset.ids || '[]'); if (!ids.length) return;
     if (!b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Confirmar: limpar ' + ids.length; return; }
@@ -77,7 +83,7 @@
     bs.querySelectorAll('[data-supvou]').forEach(b => b.addEventListener('click', async () => { try { await api('fidSupAceitar', token, b.dataset.supvou); load(); } catch (e) { toast(e.message); } }));
     bs.querySelectorAll('[data-supok]').forEach(b => b.addEventListener('click', () => supResolver(b.dataset.supok)));
     const med = S.relatorio.totais.t2t0_med;
-    document.getElementById('b-kpis').innerHTML = `<div class="kpi ${semG ? 'crit' : ''}"><b class="num">${semG}</b><small>mesas sem garçom</small></div><div class="kpi"><b class="num">${garcons.length}</b><small>garçons em turno</small></div><div class="kpi"><b class="num">${ped.length + S.chamadas.length}</b><small>pendentes</small></div><div class="kpi ${fora ? 'crit' : ''}"><b class="num">${fora}</b><small>fora do limite</small></div><div class="kpi"><b class="num">${med == null ? '-' : med.toFixed(1)}</b><small>min pedido → registo (med)</small></div>`;
+    document.getElementById('b-kpis').innerHTML = `<div class="kpi ${semG ? 'crit' : ''}"><b class="num">${semG}</b><small>mesas sem garçom</small></div><div class="kpi"><b class="num">${garcons.length}</b><small>garçons em turno</small></div><div class="kpi"><b class="num">${S.pedidos.length + S.chamadas.length}</b><small>pendentes</small></div><div class="kpi ${fora ? 'crit' : ''}"><b class="num">${fora}</b><small>fora do limite</small></div><div class="kpi"><b class="num">${med == null ? '-' : med.toFixed(1)}</b><small>min pedido → registo (med)</small></div>`;
     document.getElementById('b-staff').innerHTML = S.emTurno.map(t => { const ms = S.mesas.filter(m => m.garcom === t.id).length; const pend = S.pedidos.filter(p => (p.g1 ? p.g1 === t.id : atrib[p.mesa] === t.id)).length + S.chamadas.filter(c => (c.g ? c.g === t.id : atrib[c.mesa] === t.id)).length; return `<tr><td><b>${esc(t.nome)}</b> <span class="muted">${t.perfil}</span></td><td class="num">${hhmm(t.entrada)}</td><td class="num">${ms}</td><td class="num">${pend}</td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">Ninguém em turno.</td></tr>';
     const line = (mesa, t, txt, sub, lim, extra) => { const m = mins(t); return `<div class="wi ${nivel(m, lim)}"><span class="mesa">${esc(mesa)}</span><span><b>${txt}</b><br><span class="sub">${sub}</span></span><span style="text-align:right"><span class="t num">${Math.round(m)} min</span><br>${extra || ''}</span></div>`; };
     const bp = document.getElementById('b-ped'); bp.innerHTML = ped.sort((a, b) => new Date(a.t0) - new Date(b.t0)).map(p => line(p.mesa, p.t0, `${p.n} artigos, ${p.t1 ? 'recebido por ' + esc(nome(p.g1)) : 'por aceitar'}`, `garçom da mesa: ${esc(nome(atrib[p.mesa]))}${p.reg_por ? ', em registo por ' + esc(nome(p.reg_por)) : p.caixa ? ', em registo pelo caixa' : ''}`, p.t1 ? L.registar : L.aceitar, p.reg_por && S.user && String(p.reg_por) !== String(S.user.id) ? '' : `<a class="btn sm primary" href="registo.html?p=${encodeURIComponent(p.id)}">Ver e registar</a>`)).join('') || '<div class="empty">Nenhum pedido por registar</div>';
@@ -90,6 +96,11 @@
     const tels = S.telemoveis || []; document.getElementById('b-tel-wrap').hidden = !tels.length; document.getElementById('b-n-tel').textContent = tels.length;
     document.getElementById('b-tel').innerHTML = tels.map(x => `<div class="wi ok"><span class="mesa">${esc(x.nome)}</span><span><b>Desde as ${hhmm(x.desde)}</b><br><span class="sub">garçom da mesa: ${esc(nome(x.garcom))}, último movimento há ${Math.max(0, Math.round(mins(x.activa)))} min</span></span><button class="btn sm primary" type="button" data-tel="${esc(x.mesa)}">Conta fechada</button></div>`).join('');
     document.querySelectorAll('[data-tel]').forEach(b => b.addEventListener('click', async () => { b.disabled = true; try { await api('gLibertarTelemovel', token, b.dataset.tel); toast(b.dataset.telmsg ? 'Mesa livre: o próximo telemóvel que pedir passa a ser o da mesa.' : 'Conta fechada. A mesa fica livre para o próximo cliente.', 3500); load(); } catch (e) { b.disabled = false; toast(e.message); } }));
+    const porEnt = S.pedidos.filter(p => p.t2).sort((a, b) => new Date(a.t2) - new Date(b.t2));
+    document.getElementById('b-ent-wrap').hidden = !porEnt.length; document.getElementById('b-n-ent').textContent = porEnt.length;
+    document.getElementById('b-ent').innerHTML = porEnt.map(p => line(p.mesa, p.t2, (p.n ? p.n + (p.n == 1 ? ' artigo, registado' : ' artigos, registados') : 'Registado') + ' às ' + hhmm(p.t2), 'registou: ' + esc(nome(p.g2)) + ', garçom da mesa: ' + esc(nome(atrib[p.mesa])), L.entregar, `<button class="btn sm" type="button" data-entp="${esc(p.id)}">Entregue</button>`)).join('');
+    const bEnt = document.getElementById('b-ent-todas'); bEnt.hidden = porEnt.length < 2; bEnt.textContent = 'Marcar todos entregues'; delete bEnt.dataset.conf; bEnt.dataset.ids = JSON.stringify(porEnt.map(p => p.id));
+    document.querySelectorAll('#b-ent [data-entp]').forEach(b => b.addEventListener('click', async () => { b.disabled = true; try { await api('bEntregarPedidos', token, [b.dataset.entp]); toast('Pedido marcado como entregue.'); load(); } catch (e) { b.disabled = false; toast(e.message); } }));
     const bct = document.getElementById('b-ct');
     bct.innerHTML = cts.sort((a, b) => new Date(a.c0) - new Date(b.c0)).map(c => { const f = F.contas && F.contas[c.id]; const fid = f ? `<span class="fid">Cartão Requinte: ${esc(f.nome)}${f.disponiveis.length ? ', brinde: ' + f.disponiveis.map(d => esc(d.brinde)).join(', ') : ''}</span>` : ''; const bt = f ? f.disponiveis.map(d => `<button class="btn sm primary" type="button" data-cli="${esc(f.id)}" data-chave="${esc(d.chave)}" data-brinde="${esc(d.brinde)}" data-nome="${esc(f.nome)}" data-mesa="${esc(c.mesa)}">Entregar brinde</button>`).join('<br>') : ''; const ent = `<button class="btn sm" type="button" data-fch="${esc(c.id)}" data-conta="1"${f && f.disponiveis.length ? ' data-brinde-pend="1"' : ''}>Conta entregue</button>`; return line(c.mesa, c.c0, 'Conta', (c.aceite ? 'aceite por ' + esc(nome(c.g)) : 'garçom da mesa: ' + esc(nome(atrib[c.mesa]))) + fid, L.chamada, (bt ? bt + '<br>' : '') + ent); }).join('') || '<div class="empty">Nenhuma conta pedida</div>';
     bct.querySelectorAll('[data-chave]').forEach(b => b.addEventListener('click', () => entregar(b.dataset)));
