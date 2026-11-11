@@ -80,6 +80,17 @@ h1,h2,h3{text-wrap:balance;margin:0}
 .ev-btn{width:100%;min-height:48px}
 .ev-grande{display:block;width:100%;height:auto;border-radius:10px;margin-bottom:10px}
 .ev-mini{display:block;width:100%;max-height:230px;object-fit:cover;object-position:50% 72%;border-radius:10px;margin-bottom:10px}
+.ev.ev-sem{border-left:4px solid var(--accent)}
+a.ev-btn{display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:4px}
+.viv{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 12px;background:var(--surface2)}
+.viv-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
+.viv-nota{font-size:22px;font-family:var(--display)}
+.viv-st{font-size:18px;letter-spacing:1px;line-height:1;background:linear-gradient(90deg,#b8860b var(--p),var(--line) var(--p));-webkit-background-clip:text;background-clip:text;color:transparent}
+.viv dl{margin:0;display:grid;gap:3px;font-size:14px}
+.viv dl div{display:grid;grid-template-columns:112px 1fr;gap:8px}
+.viv dt{color:var(--muted)}
+.viv dd{margin:0}
+.viv-fonte{display:inline-block;margin-top:6px;font-size:12px;color:var(--muted)}
 .ev-premio{text-align:center;padding:6px 0 4px}
 .ev-premio .ico{width:44px;height:44px;color:var(--accent);margin-bottom:4px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .ev-premio h3{margin:2px 0 6px}
@@ -250,7 +261,7 @@ body.cliente .item .p{color:var(--accent)}
 .hl .h b{display:block;margin:3px 0 2px;font-size:18px}
 .hl .h small{display:block;line-height:1.35}
 .item .ith{width:54px;height:54px;flex:none;border-radius:10px;object-fit:cover;box-shadow:var(--shadow);background:var(--surface2)}
-.sheet .foto{display:block;width:100%;max-height:235px;object-fit:cover;border-radius:12px;margin:10px 0 12px;background:var(--surface2)}
+.sheet .foto{display:block;width:100%;height:auto;max-height:min(540px,64vh);object-fit:cover;border-radius:12px;margin:10px 0 12px;background:var(--surface2)}
 @media (prefers-reduced-motion:no-preference){
   @keyframes fadeup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   body.cliente .hl .h{animation:fadeup .5s ease-out both}

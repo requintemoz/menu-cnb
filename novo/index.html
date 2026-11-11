@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261111b">
-<script src="config.js?v=20261111b"></script>
-<script src="comum.js?v=20261111b"></script>
-<script src="traducoes.js?v=20261111b"></script>
+<link rel="stylesheet" href="estilos.css?v=20261111d">
+<script src="config.js?v=20261111d"></script>
+<script src="comum.js?v=20261111d"></script>
+<script src="traducoes.js?v=20261111d"></script>
 </head>
 <body class="cliente">
 <svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -110,7 +110,7 @@
   const modsTx = ms => (ms || []).map(m => { const k = String(m).indexOf(': '); return k > 0 ? tx(m.slice(0, k)) + ': ' + tx(m.slice(k + 2)) : tx(m); });
   const boas = () => exT(M.textos || {}, 'boas_vindas') || '';
   // fotografias: links do Google Drive passam a imagem directa; as guardadas no Supabase têm miniatura (-mini.jpg) para as listas
-  const fotoSrc = (u, w) => { u = String(u || ''); const m = u.match(/[-\w]{25,}/); if (m && /drive\.google/.test(u)) return 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000); if (w && w <= 400 && /\/storage\/v1\/object\/public\/menu-fotos\/.+\.jpg$/.test(u) && !/-mini\.jpg$/.test(u)) return u.replace(/\.jpg$/, '-mini.jpg'); return u; };
+  const fotoSrc = (u, w) => { u = String(u || ''); const m = u.match(/[-\w]{25,}/); if (m && /drive\.google/.test(u)) return 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000); if (w && w <= 400 && /(\/storage\/v1\/object\/public\/menu-fotos\/|\/menu-cnb\/fotos\/).+\.jpg$/.test(u) && !/-mini\.jpg$/.test(u)) return u.replace(/\.jpg$/, '-mini.jpg'); return u; };
   // ícones das secções, ao estilo do menu impresso
   const icone = n => { n = String(n).toLowerCase();
     if (/começar/.test(n)) return 'sopa'; if (/petisco/.test(n)) return 'petisco'; if (/\bmar\b|marisco/.test(n)) return 'peixe';
@@ -135,13 +135,25 @@
     cats.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { const g = document.querySelector(`[data-grp="${CSS.escape(b.dataset.cat)}"]`); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); cats.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }));
     renderMenu(''); renderOrders(); cartBar(); fidFaixa();
   }
+  // ---------- dados do Vivino na ficha do vinho ----------
+  function vivinoHtml(v) {
+    if (!v || !v.nota) return ''; const en = L === 'en'; const g = k => en && v[k + '_en'] ? v[k + '_en'] : v[k];
+    const lista = x => Array.isArray(x) ? x.join(en ? '; ' : '; ') : (x || '');
+    const linhas = [[en ? 'Winery' : 'Produtor', v.produtor], [en ? 'Region' : 'Região', g('regiao')], [en ? 'Grapes' : 'Castas', v.castas], [en ? 'Style' : 'Estilo', g('estilo')], [en ? 'Alcohol' : 'Álcool', v.alcool],
+      [en ? 'Tasting notes' : 'Notas de prova', lista(g('notas'))], [en ? 'Pairs with' : 'Harmoniza com', lista(g('harmoniza')).replace(/; /g, ', ')]].filter(x => x[1]);
+    const d = v.data ? new Date(v.data + 'T12:00:00').toLocaleDateString(en ? 'en-GB' : 'pt-PT') : '';
+    return `<div class="viv"><div class="viv-top"><b class="viv-nota num">${Number(v.nota).toFixed(1)}</b><span class="viv-st" role="img" aria-label="${Number(v.nota).toFixed(1)} / 5" style="--p:${Math.round(v.nota / 5 * 100)}%">★★★★★</span><span class="muted num">${Number(v.n).toLocaleString(en ? 'en-GB' : 'pt-PT')} ${en ? 'ratings on Vivino' : 'avaliações no Vivino'}</span></div>
+      <dl>${linhas.map(x => `<div><dt>${x[0]}</dt><dd>${esc(x[1])}</dd></div>`).join('')}</dl>
+      <a class="viv-fonte" href="${esc(v.url)}" target="_blank" rel="noopener">${en ? 'Source: Vivino' : 'Fonte: Vivino'}${d ? ', ' + d : ''}</a></div>`;
+  }
   // ---------- eventos: cartão com fotografias e promoção ligada a artigos ----------
+  const evData = e => { const d = new Date(e.quando); const en = L === 'en'; const dia = d.toLocaleDateString(en ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Maputo' }); const h = d.toLocaleTimeString(en ? 'en-GB' : 'pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Maputo' }); return dia.charAt(0).toUpperCase() + dia.slice(1) + (en ? ', ' : ', às ') + h + (e.local ? (en ? ', at ' : ', ') + e.local : ''); };
   function renderEv() {
     const el = document.getElementById('c-ev'); const evs = M.eventos || [];
     el.innerHTML = evs.map((e, i) => { const pr = e.promo, imgs = e.imagens || [];
-      return `<article class="ev" data-ev="${i}"><div class="ev-fotos" tabindex="0">${imgs.map((g, k) => `<button type="button" class="ev-foto" data-k="${k}"${g.promo && pr ? ' data-promo="1"' : ''} aria-label="${esc(g.promo && pr ? exT(pr, 'titulo') : (g.alt || exT(e, 'titulo')))}"><img src="${esc(g.url)}" alt="${esc(g.alt || '')}" ${k ? 'loading="lazy"' : ''} width="1080" height="1350">${g.promo && pr ? `<span class="ev-tag">${esc(exT(pr, 'titulo'))}</span>` : ''}</button>`).join('')}</div>
+      return `<article class="ev${imgs.length ? '' : ' ev-sem'}" data-ev="${i}"><div class="ev-fotos" tabindex="0"${imgs.length ? '' : ' hidden'}>${imgs.map((g, k) => `<button type="button" class="ev-foto" data-k="${k}"${g.promo && pr ? ' data-promo="1"' : ''} aria-label="${esc(g.promo && pr ? exT(pr, 'titulo') : (g.alt || exT(e, 'titulo')))}"><img src="${esc(g.url)}" alt="${esc(g.alt || '')}" ${k ? 'loading="lazy"' : ''} width="1080" height="1350">${g.promo && pr ? `<span class="ev-tag">${esc(exT(pr, 'titulo'))}</span>` : ''}</button>`).join('')}</div>
         ${imgs.length > 1 ? `<div class="ev-pontos" aria-hidden="true">${imgs.map((g, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}
-        <div class="ev-txt"><span class="eyebrow">${L === 'en' ? 'Event' : 'Evento'}</span><h2>${esc(exT(e, 'titulo'))}</h2><p class="ev-quando">${esc(exT(e, 'quando'))}</p><p>${esc(exT(e, 'texto'))}</p>
+        <div class="ev-txt"><span class="eyebrow">${L === 'en' ? 'Event' : 'Evento'}</span><h2>${esc(exT(e, 'titulo'))}</h2><p class="ev-quando">${esc(e.bilhetes ? evData(e) : exT(e, 'quando'))}</p>${exT(e, 'texto') ? `<p>${esc(exT(e, 'texto'))}</p>` : ''}${e.link ? `<a class="btn primary ev-btn" href="${esc(e.link)}" target="_blank" rel="noopener">${L === 'en' ? 'Buy tickets' : 'Comprar bilhetes'}</a>` : ''}
         ${pr ? `<button type="button" class="btn primary ev-btn" data-promo="1">${esc(exT(pr, 'titulo'))}</button>` : ''}</div></article>`; }).join('');
     el.querySelectorAll('.ev').forEach(card => { const e = evs[Number(card.dataset.ev)]; const fotos = card.querySelector('.ev-fotos'), pts = card.querySelectorAll('.ev-pontos i');
       fotos.addEventListener('scroll', () => { const k = Math.round(fotos.scrollLeft / Math.max(1, fotos.clientWidth)); pts.forEach((p, j) => p.classList.toggle('on', j === k)); }, { passive: true });
@@ -203,7 +215,7 @@
     const it = byId[id]; if (!it) return; const st = { qtd: 1, v: 0, mods: new Map(), extras: new Set() };
     const regra = M.regras[id]; const sug = (regra && horarioOk(regra.horario) ? regra.itens : []).map(x => byId[x]).filter(Boolean);
     const modGroups = it.modificadores || [];
-    openSheet(`<span class="eyebrow">${esc(catN(it))}</span><h3>${esc(nome(it))}</h3>${it.foto ? `<img class="foto" src="${esc(fotoSrc(it.foto, 1000))}" alt="" loading="lazy">` : ''}${it.descricao ? `<p class="muted" style="margin:0 0 8px">${esc(L === 'en' && it.descricao_en ? it.descricao_en : it.descricao)}</p>` : ''}<div class="price num" id="sh-price"></div>
+    openSheet(`<span class="eyebrow">${esc(catN(it))}</span><h3>${esc(nome(it))}</h3>${it.foto ? `<img class="foto" src="${esc(fotoSrc(it.foto, 1000))}" alt="" loading="lazy">` : ''}${it.descricao ? `<p class="muted" style="margin:0 0 8px">${esc(L === 'en' && it.descricao_en ? it.descricao_en : it.descricao)}</p>` : ''}${vivinoHtml(it.vivino)}<div class="price num" id="sh-price"></div>
       ${it.variantes.length ? `<div class="eyebrow">${t('tam')}</div><div class="opts" id="sh-var">${it.variantes.map((v, i) => `<button type="button" class="opt ${i === 0 ? 'on' : ''}" data-i="${i}"><span>${esc(exT(v, 'nome'))}</span><span class="num">${fmt(v.preco)}</span></button>`).join('')}</div>` : ''}
       ${modGroups.map((g, gi) => `<div class="eyebrow">${esc(exT(g, 'nome'))}${g.obrigatorio ? '<span class="req" aria-label="obrigatório">*</span>' : ''}${g.unica ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400">(${t('escolha1')})</span>` : ''}</div><div class="opts" data-g="${gi}">${g.opcoes.map((o, oi) => `<button type="button" class="opt" data-o="${oi}"><span>${esc(exT(o, 'nome'))}</span><span class="num">${o.preco ? '+ ' + fmt(o.preco) : ''}</span></button>`).join('')}</div>`).join('')}
       ${sug.length ? `<div class="sug"><span class="eyebrow">${t('combina')}</span><div class="chips">${sug.map(s => `<button type="button" class="chip" data-i="${s.id}">+ ${esc(nome(s))} (${fmt(s.preco)})</button>`).join('')}</div></div>` : ''}

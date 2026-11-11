@@ -60,7 +60,7 @@
   // texto vindo do Loyverse ou da folha: troca travessões, aspas angulares, reticências e pontos médios por sinais simples
   const limpa = s => String(s == null ? '' : s).replace(/(\d)\s*[\u2013\u2014]\s*(\d)/g, '$1-$2').replace(/\s+[\u2013\u2014]\s+([^\u2013\u2014]+)$/, ' ($1)').replace(/[\u2013\u2014]/g, '-').replace(/[\u00ab\u00bb\u201c\u201d]/g, '"').replace(/\u2026/g, '...').replace(/\s\u00b7\s/g, ', ');
   // fotografias: links do Google Drive passam a imagem directa; as guardadas no Supabase têm miniatura (-mini.jpg) para as listas (igual ao menu do cliente)
-  const fotoSrc = (u, w) => { u = String(u || ''); const m = u.match(/[-\w]{25,}/); if (m && /drive\.google/.test(u)) return 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000); if (w && w <= 400 && /\/storage\/v1\/object\/public\/menu-fotos\/.+\.jpg$/.test(u) && !/-mini\.jpg$/.test(u)) return u.replace(/\.jpg$/, '-mini.jpg'); return u; };
+  const fotoSrc = (u, w) => { u = String(u || ''); const m = u.match(/[-\w]{25,}/); if (m && /drive\.google/.test(u)) return 'https://lh3.googleusercontent.com/d/' + m[0] + '=w' + (w || 1000); if (w && w <= 400 && /(\/storage\/v1\/object\/public\/menu-fotos\/|\/menu-cnb\/fotos\/).+\.jpg$/.test(u) && !/-mini\.jpg$/.test(u)) return u.replace(/\.jpg$/, '-mini.jpg'); return u; };
   const esc = s => limpa(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // sessão da equipa: a sessão é a do Supabase (partilhada com os bilhetes e as mesas); aqui guarda-se só o nome e o perfil
   const sess = {
