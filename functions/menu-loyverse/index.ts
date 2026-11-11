@@ -4,6 +4,8 @@
 //  accao "lojas" (gestão): lista as lojas
 //  accao "pagamentos" (de 2 em 2 min pelo pg_cron, só quando há mesas a pedir pelo telemóvel): procura nos recibos do Loyverse
 //    o pagamento de cada uma dessas mesas (ticket "Mesa N") e liberta a mesa para o cliente seguinte. {"ver": true} só mostra.
+//  accao "fecho" (de 30 em 30 min a partir das 07:10, só com pedidos ou chamadas de dias anteriores abertos): lê os recibos
+//    das últimas 36 h e deixa a base de dados fechar o que ficou aberto antes de 3 h seguidas sem actividade.
 // Segredo necessário: LOYVERSE_TOKEN (supabase secrets set LOYVERSE_TOKEN=...).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -122,6 +124,17 @@ async function pagamentos(db: any, ver: boolean) {
   return out;
 }
 
+// fecho automático: a base de dados decide com a actividade do sistema e os recibos do Loyverse
+async function fecho(db: any) {
+  const { data: cfgRows } = await db.from("menu_config").select("chave, valor");
+  const c: Record<string, string> = {}; (cfgRows || []).forEach((r: any) => c[r.chave] = r.valor);
+  const recibos = await lvAll("receipts", "receipts", { created_at_min: new Date(Date.now() - 36 * 3600000).toISOString(), ...(c.loyverse_store_id ? { store_id: c.loyverse_store_id } : {}) });
+  const tempos = recibos.map((r: any) => r.receipt_date || r.created_at).filter(Boolean);
+  const { data, error } = await db.rpc("menu_fechar_dias_anteriores", { p_recibos: tempos });
+  if (error) throw new Error(error.message);
+  return { recibos: tempos.length, ...data };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const url = Deno.env.get("SUPABASE_URL")!, chave = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -144,6 +157,7 @@ Deno.serve(async (req) => {
   try {
     if (accao === "lojas") return json({ ok: true, data: (await lvGet("stores")).stores.map((s: any) => ({ id: s.id, nome: s.name })) });
     if (accao === "pagamentos") return json({ ok: true, data: await pagamentos(db, !!corpo.ver) });
+    if (accao === "fecho") return json({ ok: true, data: await fecho(db) });
     if (accao === "cruzar") return json({ ok: true, data: await cruzar(db, corpo.dia) });
     return json({ ok: true, data: await sincronizar(db) });
   } catch (e) { return json({ ok: false, erro: String((e as Error).message || e) }, 500); }
