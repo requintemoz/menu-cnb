@@ -8,10 +8,10 @@
 <link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="estilos.css?v=20261111e">
-<script src="config.js?v=20261111e"></script>
-<script src="comum.js?v=20261111e"></script>
-<script src="traducoes.js?v=20261111e"></script>
+<link rel="stylesheet" href="estilos.css?v=20261112k">
+<script src="config.js?v=20261112k"></script>
+<script src="comum.js?v=20261112k"></script>
+<script src="traducoes.js?v=20261112k"></script>
 </head>
 <body class="cliente">
 <svg hidden aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -148,17 +148,28 @@
   }
   // ---------- eventos: cartão com fotografias e promoção ligada a artigos ----------
   const evData = e => { const d = new Date(e.quando); const en = L === 'en'; const dia = d.toLocaleDateString(en ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Maputo' }); const h = d.toLocaleTimeString(en ? 'en-GB' : 'pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Maputo' }); return dia.charAt(0).toUpperCase() + dia.slice(1) + (en ? ', ' : ', às ') + h + (e.local ? (en ? ', at ' : ', ') + e.local : ''); };
+  const evCurto = e => { if (!e.bilhetes) return exT(e, 'quando'); const d = new Date(e.quando), lc = L === 'en' ? 'en-GB' : 'pt-PT'; return d.toLocaleDateString(lc, { day: 'numeric', month: 'short', timeZone: 'Africa/Maputo' }) + ', ' + d.toLocaleTimeString(lc, { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Maputo' }); };
+  // cartões pequenos: imagem, título e texto curto; o resto abre ao tocar
   function renderEv() {
     const el = document.getElementById('c-ev'); const evs = M.eventos || [];
-    el.innerHTML = evs.map((e, i) => { const pr = e.promo, imgs = e.imagens || [];
-      return `<article class="ev${imgs.length ? '' : ' ev-sem'}" data-ev="${i}"><div class="ev-fotos" tabindex="0"${imgs.length ? '' : ' hidden'}>${imgs.map((g, k) => `<button type="button" class="ev-foto" data-k="${k}"${g.promo && pr ? ' data-promo="1"' : ''} aria-label="${esc(g.promo && pr ? exT(pr, 'titulo') : (g.alt || exT(e, 'titulo')))}"><img src="${esc(g.url)}" alt="${esc(g.alt || '')}" ${k ? 'loading="lazy"' : ''} width="1080" height="1350">${g.promo && pr ? `<span class="ev-tag">${esc(exT(pr, 'titulo'))}</span>` : ''}</button>`).join('')}</div>
-        ${imgs.length > 1 ? `<div class="ev-pontos" aria-hidden="true">${imgs.map((g, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}
-        <div class="ev-txt"><span class="eyebrow">${L === 'en' ? 'Event' : 'Evento'}</span><h2>${esc(exT(e, 'titulo'))}</h2><p class="ev-quando">${esc(e.bilhetes ? evData(e) : exT(e, 'quando'))}</p>${exT(e, 'texto') ? `<p>${esc(exT(e, 'texto'))}</p>` : ''}${e.link ? `<a class="btn ${e.bilhetes ? 'primary ' : ''}ev-btn" href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.bilhetes ? (L === 'en' ? 'Buy tickets' : 'Comprar bilhetes') : (exT(e, 'link_texto') || (L === 'en' ? 'See more' : 'Ver mais')))}</a>` : ''}
-        ${pr ? `<button type="button" class="btn primary ev-btn" data-promo="1">${esc(exT(pr, 'titulo'))}</button>` : ''}</div></article>`; }).join('');
-    el.querySelectorAll('.ev').forEach(card => { const e = evs[Number(card.dataset.ev)]; const fotos = card.querySelector('.ev-fotos'), pts = card.querySelectorAll('.ev-pontos i');
-      fotos.addEventListener('scroll', () => { const k = Math.round(fotos.scrollLeft / Math.max(1, fotos.clientWidth)); pts.forEach((p, j) => p.classList.toggle('on', j === k)); }, { passive: true });
-      card.querySelectorAll('[data-promo]').forEach(b => b.addEventListener('click', () => promoSheet(e)));
-      card.querySelectorAll('.ev-foto:not([data-promo])').forEach(b => b.addEventListener('click', () => { const g = e.imagens[Number(b.dataset.k)]; openSheet(`<img class="ev-grande" src="${esc(g.url)}" alt="${esc(g.alt || '')}"><div class="actions"><button class="btn ghost" type="button" id="ev-x">${t('fechar')}</button></div>`, r => r.querySelector('#ev-x').addEventListener('click', closeSheet)); }));
+    el.innerHTML = evs.length ? `<span class="eyebrow">${L === 'en' ? 'Events' : 'Eventos'}</span><div class="evs${evs.length === 1 ? ' evs-1' : ''}">${evs.map((e, i) => { const g = (e.imagens || [])[0], pr = e.promo;
+      return `<button type="button" class="evc" data-ev="${i}">${g ? `<img src="${esc(g.url)}" alt="" ${i > 1 ? 'loading="lazy"' : ''} width="400" height="500">` : `<span class="evc-sem" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.3 5.6 6 .5-4.6 3.9 1.5 5.9L12 15.8 6.8 18.9l1.5-5.900L3.700 9.100l6-.5z"/></svg></span>`}
+        <b class="evc-t">${esc(exT(e, 'titulo'))}</b><span class="evc-q">${esc(evCurto(e))}</span>${pr ? `<span class="evc-p">${esc(exT(pr, 'titulo'))}</span>` : (exT(e, 'texto') ? `<span class="evc-x">${esc(exT(e, 'texto'))}</span>` : '')}</button>`; }).join('')}</div>` : '';
+    el.querySelectorAll('.evc').forEach(c => c.addEventListener('click', () => evSheet(evs[Number(c.dataset.ev)])));
+  }
+  function evSheet(e) {
+    const pr = e.promo, imgs = e.imagens || [], en = L === 'en'; const txt = (!en && e.detalhe) || exT(e, 'texto') || e.detalhe || '';
+    openSheet(`${imgs.length ? `<div class="ev-fotos" tabindex="0">${imgs.map((g, k) => `<button type="button" class="ev-foto" data-k="${k}"${g.promo && pr ? ' data-promo="1"' : ''} aria-label="${esc(g.promo && pr ? exT(pr, 'titulo') : (g.alt || exT(e, 'titulo')))}"><img src="${esc(g.url)}" alt="${esc(g.alt || '')}" ${k ? 'loading="lazy"' : ''} width="1080" height="1350">${g.promo && pr ? `<span class="ev-tag">${esc(exT(pr, 'titulo'))}</span>` : ''}</button>`).join('')}</div>` : ''}
+      ${imgs.length > 1 ? `<div class="ev-pontos" aria-hidden="true">${imgs.map((g, k) => `<i${k ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}
+      <div class="ev-txt"><span class="eyebrow">${en ? 'Event' : 'Evento'}</span><h3>${esc(exT(e, 'titulo'))}</h3><p class="ev-quando">${esc(e.bilhetes ? evData(e) : exT(e, 'quando'))}</p>${txt ? `<p class="ev-det">${esc(txt)}</p>` : ''}</div>
+      <div class="actions ev-acoes">${pr ? `<button type="button" class="btn primary" data-promo="1">${esc(exT(pr, 'titulo'))}</button>` : ''}
+        ${e.compra ? `<a class="btn ${pr ? '' : 'primary'}" href="${esc(e.compra)}" target="_blank" rel="noopener">${en ? 'Buy tickets' : 'Comprar bilhetes'}</a>` : ''}
+        ${e.link ? `<a class="btn" href="${esc(e.link)}" target="_blank" rel="noopener">${esc(exT(e, 'link_texto') || (en ? 'See more' : 'Ver mais'))}</a>` : ''}
+        <button class="btn ghost" type="button" id="ev-x">${t('fechar')}</button></div>`, r => {
+      r.querySelector('#ev-x').addEventListener('click', closeSheet);
+      const fotos = r.querySelector('.ev-fotos'), pts = r.querySelectorAll('.ev-pontos i');
+      if (fotos) fotos.addEventListener('scroll', () => { const k = Math.round(fotos.scrollLeft / Math.max(1, fotos.clientWidth)); pts.forEach((p, j) => p.classList.toggle('on', j === k)); }, { passive: true });
+      r.querySelectorAll('[data-promo]').forEach(b => b.addEventListener('click', () => promoSheet(e)));
     });
   }
   function promoSheet(e) {
