@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13283a">
+<meta name="robots" content="noindex">
+<title>CNB | Painel de gestão</title>
+<link rel="icon" type="image/png" sizes="48x48" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="estilos.css?v=20261111e">
+<link rel="stylesheet" href="painel.css?v=20261112a">
+<script src="lib/supabase.js"></script>
+<script src="lib/d3.min.js"></script>
+<script src="config.js?v=20261111e"></script>
+</head>
+<body>
+<header class="top wrap p-top"><div class="brand"><img src="img/monograma-claro.webp" alt="" width="142" height="96"><span>Requinte CNB<small>Painel de gestão</small></span></div>
+  <div class="row" style="margin-left:auto"><span id="p-quem" style="font-size:13px;opacity:.8"></span><a href="entrar.html">Outras páginas</a><button type="button" id="p-sair">Sair</button></div></header>
+<main class="p-view wrap">
+  <div id="p-aviso" class="empty">A abrir o painel...</div>
+  <div id="p-app" hidden>
+    <p class="pg-estado"><span id="p-quando"></span><button type="button" class="btn sm" id="p-actualizar">Actualizar agora</button></p>
+<div class="pg">
+  <header class="pg-top">
+    <h1 class="pg-h1" id="titulo">Painel de gestão</h1>
+    <p class="pg-lede" id="frase"><b data-draw="f-periodo"></b> (<span data-draw="f-datas"></span>), <span data-draw="f-quem"></span> vendeu <b data-draw="kpi" data-source="resumo" data-field="liquido" data-fmt="mt"></b><span id="f-comp-wrap"> (<span data-draw="delta" data-source="resumo" data-field="var_pct" data-fmt="pct" data-bom="sobe"></span> <span data-draw="comp"></span>)</span>, com margem bruta de <b data-draw="kpi" data-source="resumo" data-field="margem_pct" data-fmt="pct0"></b>.</p>
+    <div class="pg-ctrl" id="filtros">
+      <label class="pg-lab">Período
+        <select id="sel-periodo" aria-label="Período">
+          <option>Ontem</option><option>Últimos 7 dias</option><option>Últimos 30 dias</option><option>Mês em curso</option><option>Últimos 12 meses</option>
+        </select></label>
+      <label class="pg-lab">Loja
+        <select id="sel-loja" aria-label="Loja">
+          <option value="Todas">Todas as lojas</option><option>Restaurante CNB</option><option>Requinte loja</option><option>Armazém Náutico</option>
+        </select></label>
+    </div>
+    <nav class="pg-tabs" id="separadores" aria-label="Secções do painel">
+      <button type="button" class="pg-tab" data-tab="resumo">Resumo</button>
+      <button type="button" class="pg-tab" data-tab="vendas">Vendas</button>
+      <button type="button" class="pg-tab" data-tab="produtos">Produtos e margem</button>
+      <button type="button" class="pg-tab" data-tab="stock">Stock</button>
+      <button type="button" class="pg-tab" data-tab="equipa">Equipa</button>
+      <button type="button" class="pg-tab" data-tab="controlo">Controlo</button>
+      <button type="button" class="pg-tab" data-tab="sistema">Sistema integrado</button>
+    </nav>
+  </header>
+
+  <section class="pg-sec" id="resumo">
+    <div class="pg-kpis">
+      <div class="pg-card" id="k-vendas"><div class="pg-kl">Vendas líquidas</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="liquido" data-fmt="mt"></div>
+        <div class="pg-kd"><span data-draw="delta" data-source="resumo" data-field="var_pct" data-fmt="pct" data-bom="sobe"></span> <span class="pg-mut" data-draw="comp"></span></div>
+        <div class="pg-kd"><span data-draw="delta" data-source="resumo" data-field="var_aa_pct" data-fmt="pct" data-bom="sobe"></span> <span class="pg-mut">face ao mesmo período do ano anterior</span></div></div>
+      <div class="pg-card" id="k-recibos"><div class="pg-kl">Recibos</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="recibos" data-fmt="n"></div>
+        <div class="pg-kd"><span data-draw="delta" data-source="resumo" data-field="var_recibos_pct" data-fmt="pct" data-bom="sobe"></span> <span class="pg-mut" data-draw="comp"></span></div></div>
+      <div class="pg-card" id="k-ticket"><div class="pg-kl">Ticket médio</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="ticket" data-fmt="mt"></div>
+        <div class="pg-kd"><span data-draw="delta" data-source="resumo" data-field="var_ticket_pct" data-fmt="pct" data-bom="sobe"></span> <span class="pg-mut" data-draw="comp"></span></div></div>
+      <div class="pg-card" id="k-margem"><div class="pg-kl">Margem bruta</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="margem_pct" data-fmt="pct0"></div>
+        <div class="pg-kd"><span data-draw="delta" data-source="resumo" data-field="var_margem_pp" data-fmt="pp" data-bom="sobe"></span> <span class="pg-mut" data-draw="comp"></span></div>
+        <div class="pg-kd pg-mut">Lucro bruto de <span data-draw="kpi" data-source="resumo" data-field="lucro" data-fmt="mt"></span>. Fora do cálculo, por falta de custo fiável: <span data-draw="kpi" data-source="resumo" data-field="sem_custo_pct" data-fmt="pct0"></span> das vendas.</div></div>
+      <div class="pg-card" id="k-descontos"><div class="pg-kl">Descontos concedidos</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="desc_pct" data-fmt="pct0"></div>
+        <div class="pg-kd"><span data-draw="delta" data-source="resumo" data-field="var_desc_pp" data-fmt="pp" data-bom="desce"></span> <span class="pg-mut" data-draw="comp"></span></div>
+        <div class="pg-kd pg-mut"><span data-draw="kpi" data-source="resumo" data-field="descontos" data-fmt="mt"></span>, sem contar o consumo da casa.</div></div>
+      <div class="pg-card" id="k-casa"><div class="pg-kl">Consumo da casa</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="consumo_casa" data-fmt="mt"></div>
+        <div class="pg-kd pg-mut">Ofertas e consumo interno, a preço de venda.</div></div>
+    </div>
+
+    <h2 class="pg-h2" id="h-atencao">O que exige atenção</h2>
+    <p class="pg-note">Lista gerada a partir dos dados de todas as lojas. Não depende dos filtros acima.</p>
+    <ul class="pg-alertas" id="lista-alertas" data-draw="alertas" data-source="alertas"></ul>
+
+    <h2 class="pg-h2" id="h-tendencia">Vendas diárias dos últimos 90 dias</h2>
+    <p class="pg-note">Barras: vendas de cada dia. Linha cheia: média dos 7 dias. Linha tracejada: média dos 7 dias no ano anterior, alinhada pelo dia da semana.</p>
+    <div class="pg-chart" id="g-tendencia" data-draw="g-tendencia" data-source="dias"></div>
+
+    <h2 class="pg-h2" id="h-lojas">Comparação entre lojas</h2>
+    <div class="pg-scroll"><table class="pg-t" id="t-lojas" data-source="resumo" data-row-key="id">
+      <thead><tr><th data-field="loja">Loja</th><th data-field="liquido" class="pg-r">Vendas líquidas</th><th data-field="var_pct" class="pg-r">Variação</th><th data-field="recibos" class="pg-r">Recibos</th><th data-field="ticket" class="pg-r">Ticket médio</th><th data-field="margem_pct" class="pg-r">Margem</th><th data-field="desc_pct" class="pg-r">Descontos</th></tr></thead>
+      <tbody data-draw="t-lojas"></tbody></table></div>
+  </section>
+
+  <section class="pg-sec" id="vendas" hidden>
+    <h2 class="pg-h2" id="h-meses">Vendas líquidas por mês</h2>
+    <p class="pg-note">O mês em curso aparece mais claro, por ainda não estar fechado.</p>
+    <div class="pg-chart" id="g-meses" data-draw="g-meses" data-source="meses"></div>
+
+    <h2 class="pg-h2" id="h-horas">Quando se vende: dia da semana e hora</h2>
+    <p class="pg-note">Média de vendas por hora nas últimas 8 semanas. Quanto mais escuro, mais se vende. Serve para ajustar escalas e produção.</p>
+    <div class="pg-chart pg-chart-h" id="g-horas" data-draw="g-horas" data-source="horas"></div>
+
+    <div class="pg-2col">
+      <div><h2 class="pg-h2" id="h-pagamentos">Meios de pagamento</h2>
+        <div class="pg-scroll"><table class="pg-t" id="t-pagamentos" data-source="pagamentos" data-row-key="id">
+          <thead><tr><th data-field="metodo">Meio</th><th data-field="valor" class="pg-r">Valor</th><th data-field="pct" class="pg-r">Peso</th></tr></thead>
+          <tbody data-draw="t-pagamentos"></tbody></table></div></div>
+      <div><h2 class="pg-h2" id="h-categorias">Categorias</h2>
+        <div class="pg-scroll"><table class="pg-t" id="t-categorias" data-source="categorias" data-row-key="id">
+          <thead><tr><th data-field="categoria">Categoria</th><th data-field="liquido" class="pg-r">Vendas</th><th data-field="peso_pct" class="pg-r">Peso</th><th data-field="var_pct" class="pg-r">Variação</th><th data-field="margem_pct" class="pg-r">Margem</th></tr></thead>
+          <tbody data-draw="t-categorias"></tbody></table></div></div>
+    </div>
+  </section>
+
+  <section class="pg-sec" id="produtos" hidden>
+    <h2 class="pg-h2" id="h-top">Artigos mais vendidos</h2>
+    <p class="pg-note">Os 25 primeiros por vendas líquidas, no período e na loja escolhidos.</p>
+    <div class="pg-scroll"><table class="pg-t" id="t-produtos" data-source="produtos" data-row-key="id">
+      <thead><tr><th data-field="item">Artigo</th><th data-field="categoria">Categoria</th><th data-field="qtd" class="pg-r">Quantidade</th><th data-field="liquido" class="pg-r">Vendas</th><th data-field="var_pct" class="pg-r">Variação</th><th data-field="margem_pct" class="pg-r">Margem</th></tr></thead>
+      <tbody data-draw="t-produtos"></tbody></table></div>
+
+    <div class="pg-2col">
+      <div><h2 class="pg-h2" id="h-sobe">A ganhar vendas</h2>
+        <div class="pg-scroll"><table class="pg-t" id="t-sobe" data-source="movimentos" data-row-key="id">
+          <thead><tr><th data-field="item">Artigo</th><th data-field="liquido" class="pg-r">Vendas</th><th data-field="variacao" class="pg-r">Diferença</th></tr></thead>
+          <tbody data-draw="t-sobe"></tbody></table></div></div>
+      <div><h2 class="pg-h2" id="h-desce">A perder vendas</h2>
+        <div class="pg-scroll"><table class="pg-t" id="t-desce" data-source="movimentos" data-row-key="id">
+          <thead><tr><th data-field="item">Artigo</th><th data-field="liquido" class="pg-r">Vendas</th><th data-field="variacao" class="pg-r">Diferença</th></tr></thead>
+          <tbody data-draw="t-desce"></tbody></table></div></div>
+    </div>
+    <p class="pg-note" id="nota-mov">A diferença compara com o período anterior de igual duração. Não está disponível para "Ontem" nem para "Últimos 12 meses".</p>
+
+    <h2 class="pg-h2" id="h-margem">Problemas de margem nos últimos 30 dias</h2>
+    <p class="pg-note">Todas as lojas. "Exposição" é a perda face ao custo ou, quando falta o custo, o valor vendido sem margem conhecida. Ofertas da casa não entram.</p>
+    <div class="pg-scroll"><table class="pg-t" id="t-margem" data-source="margem_problemas" data-row-key="id">
+      <thead><tr><th data-field="problema">Problema</th><th data-field="item">Artigo</th><th data-field="qtd" class="pg-r">Quantidade</th><th data-field="liquido" class="pg-r">Vendas</th><th data-field="custo" class="pg-r">Custo</th><th data-field="exposicao" class="pg-r">Exposição</th></tr></thead>
+      <tbody data-draw="t-margem"></tbody></table></div>
+  </section>
+
+  <section class="pg-sec" id="stock" hidden>
+    <div class="pg-kpis">
+      <div class="pg-card" id="k-stock"><div class="pg-kl">Valor do stock, ao custo</div>
+        <div class="pg-kv" data-draw="stk" data-source="stock_lojas" data-field="valor_stock" data-fmt="mt"></div>
+        <div class="pg-kd pg-mut"><span data-draw="stk" data-source="stock_lojas" data-field="itens_com_stock" data-fmt="n"></span> artigos com existências.</div></div>
+      <div class="pg-card" id="k-negativo"><div class="pg-kl">Registos com stock negativo</div>
+        <div class="pg-kv" data-draw="stk" data-source="stock_lojas" data-field="itens_stock_negativo" data-fmt="n"></div>
+        <div class="pg-kd pg-mut">Entradas por lançar ou fichas técnicas por corrigir.</div></div>
+    </div>
+    <p class="pg-note">O valor do stock segue o filtro da loja e usa o custo registado no Loyverse. A lista de compras de bebidas continua, por agora, no painel semanal de compras.</p>
+  </section>
+
+  <section class="pg-sec" id="equipa" hidden>
+    <h2 class="pg-h2" id="h-equipa">Vendas por empregado</h2>
+    <p class="pg-note">Vendas atribuídas a quem registou o recibo. O ticket médio do balcão é naturalmente inferior ao das mesas: comparar dentro de cada grupo.</p>
+    <div class="pg-scroll"><table class="pg-t" id="t-equipa" data-source="equipa" data-row-key="id">
+      <thead><tr><th data-field="empregado">Empregado</th><th data-field="liquido" class="pg-r">Vendas</th><th data-field="peso_pct" class="pg-r">Peso</th><th data-field="recibos" class="pg-r">Recibos</th><th data-field="ticket" class="pg-r">Ticket médio</th><th data-field="itens_por_recibo" class="pg-r">Artigos por recibo</th><th data-field="desc_pct" class="pg-r">Descontos</th><th data-field="consumo_casa" class="pg-r">Consumo da casa</th></tr></thead>
+      <tbody data-draw="t-equipa"></tbody></table></div>
+  </section>
+
+  <section class="pg-sec" id="controlo" hidden>
+    <div class="pg-kpis">
+      <div class="pg-card" id="k-c-desc"><div class="pg-kl">Descontos concedidos</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="descontos" data-fmt="mt"></div>
+        <div class="pg-kd pg-mut"><span data-draw="kpi" data-source="resumo" data-field="desc_pct" data-fmt="pct0"></span> do valor antes de descontos.</div></div>
+      <div class="pg-card" id="k-c-casa"><div class="pg-kl">Consumo da casa</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="consumo_casa" data-fmt="mt"></div>
+        <div class="pg-kd pg-mut">A preço de venda.</div></div>
+      <div class="pg-card" id="k-c-canc"><div class="pg-kl">Recibos cancelados</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="cancelados" data-fmt="n"></div>
+        <div class="pg-kd pg-mut">No valor de <span data-draw="kpi" data-source="resumo" data-field="cancelados_valor" data-fmt="mt"></span>.</div></div>
+      <div class="pg-card" id="k-c-reemb"><div class="pg-kl">Reembolsos</div>
+        <div class="pg-kv" data-draw="kpi" data-source="resumo" data-field="reembolsos" data-fmt="mt"></div>
+        <div class="pg-kd pg-mut">Já descontados nas vendas líquidas.</div></div>
+    </div>
+
+    <div class="pg-2col">
+      <div><h2 class="pg-h2" id="h-descontos">Descontos por tipo</h2>
+        <div class="pg-scroll"><table class="pg-t" id="t-descontos" data-source="descontos" data-row-key="id">
+          <thead><tr><th data-field="tipo">Tipo</th><th data-field="valor" class="pg-r">Valor</th><th data-field="recibos" class="pg-r">Recibos</th><th data-field="pct_das_vendas" class="pg-r">Em % das vendas</th></tr></thead>
+          <tbody data-draw="t-descontos"></tbody></table></div></div>
+      <div><h2 class="pg-h2" id="h-caixa">Diferenças no fecho de caixa, 30 dias</h2>
+        <p class="pg-note">Dinheiro contado menos dinheiro esperado, por dia. Só os dias com diferença. Segue o filtro da loja.</p>
+        <div class="pg-scroll"><table class="pg-t" id="t-caixa" data-source="caixa" data-row-key="id">
+          <thead><tr><th data-field="data">Dia</th><th data-field="loja">Loja</th><th data-field="turnos" class="pg-r">Turnos</th><th data-field="diferenca" class="pg-r">Diferença</th></tr></thead>
+          <tbody data-draw="t-caixa"></tbody></table></div></div>
+    </div>
+  </section>
+
+  <section class="pg-sec" id="sistema" hidden>
+    <h2 class="pg-h2" id="h-modulos">Outros módulos do sistema</h2>
+    <p class="pg-note">Indicadores lidos em directo do menu digital, do Cartão Requinte, dos bilhetes e das mesas.</p>
+    <div class="pg-scroll"><table class="pg-t" id="t-modulos" data-source="modulos" data-row-key="o">
+      <thead><tr><th data-field="modulo">Módulo</th><th data-field="indicador">Indicador</th><th data-field="valor" class="pg-r">Valor</th></tr></thead>
+      <tbody data-draw="t-modulos"></tbody></table></div>
+
+    <h2 class="pg-h2" id="h-proximos">Módulos a ligar a este painel</h2>
+    <ul class="pg-lista">
+      <li><b>QuickBooks:</b> resultado mensal, despesas por rubrica, saldos de bancos e carteiras móveis, contas a pagar.</li>
+      <li><b>Menu digital:</b> tempos de resposta aos pedidos e às chamadas, avaliações dos clientes, pedidos por mesa e por hora.</li>
+      <li><b>Bilhetes e mesas de eventos:</b> vendas por evento e por lote, ocupação das mesas, entradas na porta.</li>
+      <li><b>Escalas e presenças:</b> horas trabalhadas contra vendas por hora, custo de pessoal em percentagem das vendas.</li>
+      <li><b>Checklists diários:</b> taxa de cumprimento por turno e por função.</li>
+      <li><b>Cozinha:</b> lista de compras e custo dos pratos, quando as unidades de stock dos ingredientes estiverem corrigidas no Loyverse.</li>
+    </ul>
+  </section>
+
+  <details class="pg-def" id="definicoes"><summary>Como se calculam os números</summary>
+    <ul class="pg-lista">
+      <li><b>Vendas líquidas:</b> valor vendido depois de descontos e de reembolsos. Os recibos cancelados não entram. Os preços do Loyverse não têm imposto separado.</li>
+      <li><b>Dia:</b> dia de calendário na hora de Maputo, como nos relatórios do Loyverse. Os períodos terminam no último dia completo.</li>
+      <li><b>Margem bruta:</b> vendas líquidas menos o custo registado no Loyverse, só nos artigos com custo fiável. Ficam fora os artigos sem custo, as ofertas da casa e os artigos cujo custo registado é mais de 3 vezes o preço.</li>
+      <li><b>Descontos concedidos:</b> todos os descontos, excepto o "Consumo casa", que é mostrado à parte.</li>
+      <li><b>Actualização:</b> os recibos do Loyverse são copiados para o sistema de 30 em 30 minutos; o catálogo, o stock e os turnos de 6 em 6 horas.</li>
+    </ul></details>
+</div>
+  </div>
+</main>
+<script src="painel-lib.js?v=20261112a"></script>
+<script src="painel-app.js?v=20261112a"></script>
+<script>
+(function () {
+  const C = window.CNB; const sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY);
+  const aviso = document.getElementById('p-aviso'), app = document.getElementById('p-app');
+  const mostra = (t) => { aviso.textContent = t; aviso.hidden = false; app.hidden = true; };
+  const quando = (s) => { const d = new Date(s); return d.toLocaleDateString('pt-PT') + ' às ' + d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }); };
+  async function ler() {
+    const { data, error } = await sb.rpc('painel_ler');
+    if (error) {
+      if (error.code === '42501' || /permiss/i.test(error.message || '')) { mostra('Esta conta não tem acesso ao painel de gestão. Fale com a gerência.'); return false; }
+      mostra('Não foi possível carregar o painel. Verifique a internet e tente de novo.'); return false;
+    }
+    const d = data.dados || {};
+    if (!d.resumo) { mostra('O painel ainda não tem dados. A primeira cópia do Loyverse está em curso.'); return false; }
+    document.getElementById('p-quem').textContent = data.eu || '';
+    const m = d.meta || {};
+    document.getElementById('p-quando').textContent = 'Dados do Loyverse até ' + (m.ultimo_recibo ? quando(m.ultimo_recibo) : 'n/d') + '. Calculado em ' + (m.calculado_em ? quando(m.calculado_em) : 'n/d') + '.';
+    aviso.hidden = true; app.hidden = false;
+    window.dash.carregar(d);
+    return true;
+  }
+  async function inicio() {
+    let s = null; try { s = (await sb.auth.getSession()).data.session; } catch (e) {}
+    if (!s) { location.replace((C.ENTRADA || 'entrar.html') + '?para=painel.html'); return; }
+    await ler();
+  }
+  document.getElementById('p-sair').addEventListener('click', async () => {
+    try { localStorage.removeItem('cnb-eu'); await sb.auth.signOut(); } catch (e) {}
+    location.replace(C.ENTRADA || 'entrar.html');
+  });
+  document.getElementById('p-actualizar').addEventListener('click', async (ev) => {
+    const b = ev.currentTarget; b.disabled = true; b.textContent = 'A actualizar...';
+    try {
+      const s = (await sb.auth.getSession()).data.session;
+      const r = await fetch(C.SUPABASE_URL + '/functions/v1/painel-loyverse', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: C.SUPABASE_KEY, Authorization: 'Bearer ' + (s ? s.access_token : '') }, body: JSON.stringify({ accao: 'sincronizar' }) });
+      const j = await r.json().catch(() => null);
+      if (!j || !j.ok) throw new Error((j && j.erro) || 'Erro no servidor');
+      await ler();
+    } catch (e) { document.getElementById('p-quando').textContent = 'Não foi possível actualizar: ' + e.message; }
+    b.disabled = false; b.textContent = 'Actualizar agora';
+  });
+  inicio();
+})();
+</script>
+</body>
+</html>
